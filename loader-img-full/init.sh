@@ -119,5 +119,7 @@ if ! mount -n -o move /run/boot_part /target/boot; then
     support
 fi
 
+mount -o remount,rw /target/boot
+
 cat /._printk_restore > /proc/sys/kernel/printk
 exec switch_root /target /sbin/init " " "$(cat /._cmdline)"
