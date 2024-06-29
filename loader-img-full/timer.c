@@ -2,8 +2,17 @@
 
 static int TIMER_TicksRemaining = 5*30;
 static int TIMER_Stopped = false;
+static int TIMER_Paused = false;
 static void TIMER_Stop() {
     TIMER_Stopped = true;
+}
+
+static void TIMER_Pause() {
+    TIMER_Paused = true;
+}
+
+static void TIMER_Resume() {
+    TIMER_Paused = false;
 }
 
 static void TIMER_Redraw() {

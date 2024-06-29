@@ -1,5 +1,6 @@
 #include "include.h"
 
+#include "timer.c"
 #include "dev.c"
 
 static void doCleanup() {
@@ -8,7 +9,6 @@ static void doCleanup() {
 }
 
 #include "bottom.c"
-#include "timer.c"
 #include "term.c"
 
 
@@ -81,9 +81,13 @@ int main() {
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
 
+    TIMER_Pause();
+
     while (true) {
         MAIN_LoopIters++;
-        TIMER_TicksRemaining--;
+	if (!TIMER_Paused) {
+            TIMER_TicksRemaining--;
+	}
 
         if (MAIN_LoopIters % 15 == 0 || MAIN_LoopIters == 1) {
             int i = 0;

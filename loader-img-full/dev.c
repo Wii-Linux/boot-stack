@@ -171,8 +171,12 @@ static void DEV_Scan(char* block_device) {
     int colorLenHighlighted = 0;
     bool canBoot = true;
     bool color = false;
+    bool paused = TIMER_Paused;
 
     fprintf(logfile, "DEV_Scan(): scan initiated for \"%s\"\r\n", block_device);
+
+
+    TIMER_Pause();
     pr = blkid_new_probe_from_filename(block_device);
     if (!pr) {
         addProblem("Couldn't create new blkid probe");
@@ -193,6 +197,7 @@ static void DEV_Scan(char* block_device) {
     if (blkid_probe_lookup_value(pr, "PTTYPE", &fsType, NULL) == 0) {
         fprintf(logfile, "DEV_Scan(): Detected full block device \"%s\"\r\n", block_device);
         blkid_free_probe(pr);
+        TIMER_Resume();
         return;
     }
 
@@ -233,6 +238,7 @@ static void DEV_Scan(char* block_device) {
                 // not a Linux distro at all, or corrupted beyond repair, don't even list it.
                 fprintf(logfile, "DEV_Scan(): \"%s\" is not a Linux distro\r\n", block_device);
                 blkid_free_probe(pr);
+		if (!paused) TIMER_Resume();
                 return;
             case 4:
                 // non-fatal error, checking continued, distro will boot
@@ -273,7 +279,8 @@ static void DEV_Scan(char* block_device) {
     items[ITEM_NumItems].colorLen = colorLen;
     items[ITEM_NumItems].colorLenHighlighted = colorLenHighlighted;
     ITEM_NumItems++;
-    
+
+    if (!paused) TIMER_Resume();
 }
 
 
