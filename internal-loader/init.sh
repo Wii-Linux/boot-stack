@@ -13,17 +13,24 @@ if ! [ -c /dev/tty0 ]; then
     mknod /dev/null    c 1 3
 fi
 
-exec > /dev/console 2>&1
+exec > /dev/console 2> /dev/console
 
 printf "\033[6;1H\033[J"
-echo "Wii Linux Initrd Loader v0.0.1"
+echo "Wii Linux Initrd Loader v0.0.2"
 
+echo "initrd starting" > /dev/kmsg
+
+
+# SD
 # modprobe gcn-sd
 modprobe mmc_block
 modprobe mmc_core
 modprobe sdhci-of-hlwd
+
+# FS
 modprobe vfat
 modprobe squashfs
+echo "modules loaded" > /dev/kmsg
 
 . /logging.sh
 . /support.sh
@@ -48,6 +55,7 @@ for arg in $(cat /proc/cmdline); do
         esac
     fi
 done
+echo "parsed args" > /dev/kmsg
 
 sec=$(($sd_detect_timeout / 100))
 echo "Waiting ${sec}s for SD Card to show up"
@@ -66,10 +74,13 @@ while [ $i != $(($sd_detect_timeout / 5)) ]; do
     usleep 50000
 done
 
+printf "waited for devs... " > /dev/kmsg
 if [ $num = 0 ]; then
     error "Waited $sec seconds, but an SD Card with partitions did not show up!"
+    echo "fail" > /dev/kmsg
     support
 fi
+echo "success" > /dev/kmsg
 
 success "Found SD Card with $num partitions."
 parts=$(ls /dev/mmc*)
@@ -77,7 +88,9 @@ parts=$(ls /dev/mmc*)
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
-    "Linux version 4.5"*) ver=45 ;;
+    "Linux version 4.5"*) ver=v4_5_0; legacyVer=66;;
+    "Linux version 4.20"*) ver=v4_20_0;;
+    "Linux version 6.6"*) ver=v6_6_0; legacyVer=45;;
     *) error "Unknown kernel version, Techflash messed up!"; support ;;
 esac
 
@@ -87,7 +100,7 @@ if [ "$auto_boot_partition" != "" ] && ! [ -b "$auto_boot_partition" ]; then
 
 elif [ -b "$auto_boot_partition" ]; then
     echo "Found manually specified partition $auto_boot_partition!"
-    if mount $auto_boot_partition /boot_part -t vfat -o ro && [ -f /boot_part/gumboot/loader$ver.img ]; then
+    if mount $auto_boot_partition /boot_part -t vfat -o ro && { [ -f /boot_part/gumboot/loader$legacyVer.img ] || [ -f /boot_part/gumboot/$ver.ldr ]; }; then
         boot_part=$auto_boot_partition
         umount /boot_part
     else
@@ -104,7 +117,7 @@ if [ "$boot_part" = "" ]; then
             continue
         fi
         echo "Trying partition $part..."
-        if mount $part /boot_part -t vfat -o ro && [ -f /boot_part/gumboot/loader$ver.img ]; then
+        if mount $part /boot_part -t vfat -o ro && { [ -f /boot_part/gumboot/loader$legacyVer.img ] || [ -f /boot_part/gumboot/$ver.ldr ]; }; then
             boot_part=$part
             break
         fi
@@ -118,16 +131,28 @@ if [ "$boot_part" = "" ]; then
     support
 fi
 
-success "Found $boot_part with loader$ver.img!  Pivoting..."
-if ! mount /boot_part/gumboot/loader$ver.img /target -t squashfs -o ro; then
-    error "Uh oh, found loader$ver.img, but failed to mount it...."
+if [ -f /boot_part/gumboot/$ver.ldr ]; then
+	name=/boot_part/gumboot/$ver.ldr
+	fname=$ver.ldr
+elif [ -f /boot_part/gumboot/loader$legacyVer.img ]; then
+	name=/boot_part/gumboot/loader$legacyVer.img
+	fname=$legacyVer.img
+else
+	error "wtf, we should never reach this"
+	support
+fi
+
+
+success "Found $boot_part with $fname!  Pivoting..."
+if ! mount $name /target -t squashfs -o ro; then
+    error "Uh oh, found $fname, but failed to mount it...."
     echo "This is likely the result of an interrupted update mangling it beyond usability."
     umount /boot_part
     support
 fi
 
 if ! [ -x /target/sbin/init ]; then
-    error "Uh oh, found and mounted loader$ver.img, but /sbin/init either doesn't"
+    error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
     error "exist there, or isn't executable!"
     echo "This is likely the result of an interrupted update mangling it beyond usability."
     echo "Please include the following debug info:"
