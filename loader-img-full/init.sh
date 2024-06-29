@@ -25,6 +25,8 @@ echo "Wii Linux loader.img init v0.0.1"
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
+echo "loader.img starting" > /dev/kmsg
+
 # nuke jit_setup.sh so the user can't screw up their initramfs and be forced to reboot
 rm /jit_setup.sh
 
@@ -37,20 +39,22 @@ printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 # SD Drivers
 # modprobe gcn-sd
 if ! (modprobe mmc_block; modprobe mmc_core; modprobe sdhci-of-hlwd); then
-    error "failed to load modules"
-    recoveryShell
+    error "failed to load SD modules"
+    support
 fi
 
 
 # USB Drivers
-modprobe usbcore
-modprobe ehci-hcd
-modprobe ohci-hcd
-modprobe usb-storage
-modprobe uas
-modprobe sd_mod
-modprobe hid-generic
-modprobe usbhid
+if ! (modprobe usbcore;modprobe ehci-hcd;modprobe ohci-hcd;modprobe hid-generic;modprobe usbhid); then
+    error "failed to load USB modules"
+    support
+fi
+
+if ! (modprobe usb-storage; modprobe uas; modprobe sd_mod); then
+	error "failed to load USB storage modules"
+	recoveryShell
+fi
+
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
 # Filesystem drivers
