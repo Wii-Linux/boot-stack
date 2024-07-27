@@ -16,9 +16,15 @@ fi
 exec > /dev/console 2> /dev/console
 
 printf "\033[6;1H\033[J"
-echo "Wii Linux Initrd Loader v0.0.2"
+echo "Wii Linux Initrd Loader v0.2.0"
 
 echo "initrd starting" > /dev/kmsg
+. /logging.sh
+
+if cat /proc/version | grep -q '\-wii-ios'; then
+	is_ios_kernel=true
+	warn "Running on experimental IOS kernel!  Beware of bugs!"
+fi
 
 
 # SD
@@ -27,12 +33,12 @@ modprobe mmc_block
 modprobe mmc_core
 modprobe sdhci-of-hlwd
 
+
 # FS
 modprobe vfat
 modprobe squashfs
 echo "modules loaded" > /dev/kmsg
 
-. /logging.sh
 . /support.sh
 
 # global variables
@@ -41,7 +47,7 @@ sd_detect_timeout=500
 
 # parse cmdline
 for arg in $(cat /proc/cmdline); do
-    if echo "$arg" | grep 'wii_linux.loader'; then
+    if echo "$arg" | grep -q 'wii_linux.loader'; then
         # parse it
         case "$arg" in
             wii_linux.init.auto_boot_partition=*)
@@ -57,20 +63,30 @@ for arg in $(cat /proc/cmdline); do
 done
 echo "parsed args" > /dev/kmsg
 
-sec=$(($sd_detect_timeout / 100))
+sec=$((sd_detect_timeout / 100))
 echo "Waiting ${sec}s for SD Card to show up"
 
 i=0
 num=0
-while [ $i != $(($sd_detect_timeout / 5)) ]; do
+while [ $i != $((sd_detect_timeout / 5)) ]; do
     if ls /dev/mmc* >/dev/null 2>&1; then
+        card="mmc"
         num=$(ls -l /dev/mmc* | wc -l)
+
         # account for base device
-        num=$(($num - 1))
+        num=$((num - 1))
+        break
+    fi
+    if ls /dev/rvlsd* >/dev/null 2>&1; then
+        card="rvlsd"
+        num=$(ls -l /dev/rvlsd* | wc -l)
+
+        # account for base device
+        num=$((num - 1))
         break
     fi
 
-    i=$(($i + 1))
+    i=$((i + 1))
     usleep 50000
 done
 
@@ -83,16 +99,21 @@ fi
 echo "success" > /dev/kmsg
 
 success "Found SD Card with $num partitions."
-parts=$(ls /dev/mmc*)
+parts=$(ls "/dev/$card"*)
 
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
-    "Linux version 4.5"*) ver=v4_5_0; legacyVer=66;;
+    "Linux version 3.15.10"*) ver=v3_15_10;;
+    "Linux version 4.5"*) ver=v4_5_0;;
     "Linux version 4.20"*) ver=v4_20_0;;
-    "Linux version 6.6"*) ver=v6_6_0; legacyVer=45;;
+    "Linux version 6.6"*) ver=v6_6_0;;
     *) error "Unknown kernel version, Techflash messed up!"; support ;;
 esac
+
+if [ "$is_ios_kernel" = "true" ] && [ "${#ver}" -lt "8" ]; then
+	ver="${ver}i"
+fi
 
 if [ "$auto_boot_partition" != "" ] && ! [ -b "$auto_boot_partition" ]; then
     warn "Specified auto_boot_partition does not exist!  Fix your boot config!!"
@@ -100,7 +121,7 @@ if [ "$auto_boot_partition" != "" ] && ! [ -b "$auto_boot_partition" ]; then
 
 elif [ -b "$auto_boot_partition" ]; then
     echo "Found manually specified partition $auto_boot_partition!"
-    if mount $auto_boot_partition /boot_part -t vfat -o ro && { [ -f /boot_part/gumboot/loader$legacyVer.img ] || [ -f /boot_part/gumboot/$ver.ldr ]; }; then
+    if mount "$auto_boot_partition" /boot_part -t vfat -o ro && [ -f "/boot_part/wiilinux/$ver.ldr" ]; then
         boot_part=$auto_boot_partition
         umount /boot_part
     else
@@ -112,12 +133,12 @@ fi
 
 if [ "$boot_part" = "" ]; then
     for part in $parts; do
-        if [ "$part" = "/dev/mmcblk0" ]; then
+        if [ "$part" = "/dev/mmcblk0" ] || [ "$part" = "/dev/rvlsda" ]; then
             # skip raw block dev
             continue
         fi
         echo "Trying partition $part..."
-        if mount $part /boot_part -t vfat -o ro && { [ -f /boot_part/gumboot/loader$legacyVer.img ] || [ -f /boot_part/gumboot/$ver.ldr ]; }; then
+        if mount "$part" /boot_part -t vfat -o ro && [ -f "/boot_part/wiilinux/$ver.ldr" ]; then
             boot_part=$part
             break
         fi
@@ -125,32 +146,25 @@ if [ "$boot_part" = "" ]; then
 fi
 
 if [ "$boot_part" = "" ]; then
-    error "While there is an SD Card in your Wii, nothing mountable contains loader$ver.img!"
+    error "While there is an SD Card in your Wii, nothing mountable contains $ver.ldr!"
     error "Your Wii Linux install is unbootable until you fix this."
     error "Bad system update perhaps?"
     support
 fi
 
-if [ -f /boot_part/gumboot/$ver.ldr ]; then
-	name=/boot_part/gumboot/$ver.ldr
-	fname=$ver.ldr
-elif [ -f /boot_part/gumboot/loader$legacyVer.img ]; then
-	name=/boot_part/gumboot/loader$legacyVer.img
-	fname=$legacyVer.img
-else
-	error "wtf, we should never reach this"
-	support
-fi
-
+name=/boot_part/wiilinux/$ver.ldr
+fname=$ver.ldr
 
 success "Found $boot_part with $fname!  Pivoting..."
-if ! mount $name /target -t squashfs -o ro; then
+echo "mounting squashfs" > /dev/kmsg
+if ! mount "$name" /target -t squashfs -o ro; then
     error "Uh oh, found $fname, but failed to mount it...."
     echo "This is likely the result of an interrupted update mangling it beyond usability."
     umount /boot_part
     support
 fi
 
+echo "checking /sbin/init" > /dev/kmsg
 if ! [ -x /target/sbin/init ]; then
     error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
     error "exist there, or isn't executable!"
@@ -163,25 +177,26 @@ if ! [ -x /target/sbin/init ]; then
     support
 fi
 
-# mkdir /target_inram
-# mount -t tmpfs tmpfs /target_inram
-# cp -ar /target/* /target_inram/
-# umount /target
-# exec /bin/busybox switch_root /target_inram /sbin/init
+echo "running jit setup" > /dev/kmsg
 /target/jit_setup.sh
 err=$?
 if [ $err != 0 ]; then
-    error "Uh oh!  Just-in-Time setup for loader$ver.img failed with error code $err!"
+    error "Uh oh!  Just-in-Time setup for $ver.ldr failed with error code $err!"
     umount /target
     umount /boot_part
     echo "Please include any errors that occured above"
     support
 fi
+
+echo "making dir" > /dev/kmsg
 mkdir /target/run/boot_part
+echo "moving mount" > /dev/kmsg
 if ! mount -n -o move /boot_part /target/run/boot_part; then
     error "failed to move /boot_part"
     support
 fi
+echo "about to exec" > /dev/kmsg
 exec /bin/busybox switch_root /target /sbin/init
+echo "exec failed" > /dev/kmsg
 error "switch_root failed..."
 support
