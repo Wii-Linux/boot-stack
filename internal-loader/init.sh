@@ -1,5 +1,27 @@
 #!/bin/ash
 # shellcheck shell=bash
+
+
+
+# Wii Linux Initrd Loader init script
+#
+# XXX: Contains garbage hacks to be able to load the installer despite
+# several kernel bugs making that theoretically impossible.  They need to be
+# worked around in incredibly unconventional and annoying ways.
+#
+# They're marked with "XXX: installer hack #[number]"
+#
+# The most egregious of which being the following 2:
+#   - Load the entire thing, uncompressed, via FAT32.
+#     Copying from a squashfs just doesn't work due to kernel bugs.
+#     The issue lies in the SD Card driver, not an issue with sqfs itself.
+#     It's something about waiting on buffers, that just never get filled iirc
+#
+#   - Since FAT32 doesn't have permissions support, generate, at build time, a
+#     script to apply the correct permissions.  Copy to RAM, and apply them
+#     at runtime (via jit_loader.sh), in RAM, where we can have permissions.
+
+
 mount -t devtmpfs dev /dev
 mount -t sysfs sys /sys
 mount -t proc proc /proc
@@ -15,7 +37,7 @@ fi
 
 exec > /dev/console 2> /dev/console
 
-printf "\033[6;1H\033[J"
+echo -en "\033[6;1H\033[J"
 echo "Wii Linux Initrd Loader v0.2.0"
 
 echo "initrd starting" > /dev/kmsg
@@ -90,7 +112,7 @@ while [ $i != $((sd_detect_timeout / 5)) ]; do
     usleep 50000
 done
 
-printf "waited for devs... " > /dev/kmsg
+echo -n "waited for devs... " > /dev/kmsg
 if [ $num = 0 ]; then
     error "Waited $sec seconds, but an SD Card with partitions did not show up!"
     echo "fail" > /dev/kmsg
@@ -104,7 +126,8 @@ parts=$(ls "/dev/$card"*)
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
-    "Linux version 3.15.10"*) ver=v3_15_10;;
+    "Linux version 3.15.10"*) ver=installer ;;
+    "Linux version 4.4.302-cip80-wii-ios"*) ver=v4_4_302;;
     "Linux version 4.5"*) ver=v4_5_0;;
     "Linux version 4.20"*) ver=v4_20_0;;
     "Linux version 6.6"*) ver=v6_6_0;;
@@ -138,7 +161,9 @@ if [ "$boot_part" = "" ]; then
             continue
         fi
         echo "Trying partition $part..."
-        if mount "$part" /boot_part -t vfat -o ro && [ -f "/boot_part/wiilinux/$ver.ldr" ]; then
+	
+	# XXX: Installer hack #1 - check for raw dir in case of installer
+        if mount "$part" /boot_part -t vfat -o ro && { [ -f "/boot_part/wiilinux/$ver.ldr" ] || [ -d "/boot_part/wiilinux/$ver" ]; }; then
             boot_part=$part
             break
         fi
@@ -152,29 +177,47 @@ if [ "$boot_part" = "" ]; then
     support
 fi
 
-name=/boot_part/wiilinux/$ver.ldr
-fname=$ver.ldr
+# XXX: Installer hack #2 - skip mounting if installer
+if [ "$ver" = "installer" ]; then
+	mount --bind /boot_part/wiilinux/installer /target
+else
+	name=/boot_part/wiilinux/$ver.ldr
+	fname=$ver.ldr
 
-success "Found $boot_part with $fname!  Pivoting..."
-echo "mounting squashfs" > /dev/kmsg
-if ! mount "$name" /target -t squashfs -o ro; then
-    error "Uh oh, found $fname, but failed to mount it...."
-    echo "This is likely the result of an interrupted update mangling it beyond usability."
-    umount /boot_part
-    support
+	success "Found $boot_part with $fname!  Pivoting..."
+	echo "mounting squashfs" > /dev/kmsg
+	if ! mount "$name" /target -t squashfs -o ro; then
+	    error "Uh oh, found $fname, but failed to mount it...."
+	    echo "This is likely the result of an interrupted update mangling it beyond usability."
+	    umount /boot_part
+	    support
+	fi
 fi
 
-echo "checking /sbin/init" > /dev/kmsg
-if ! [ -x /target/sbin/init ]; then
-    error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
-    error "exist there, or isn't executable!"
-    echo "This is likely the result of an interrupted update mangling it beyond usability."
-    echo "Please include the following debug info:"
-    ls -l /target/sbin/init
-    ls -l /target/linuxrc
-    umount /target
-    umount /boot_part
-    support
+# XXX: Installer hack #3 - since we can't have symlinks on FAT32, /sbin/init,
+# actually won't exist yet, so this check will always fail.
+# It'll be generated below when we run jit_setup.sh, which will relocate
+# everything to a tmpfs and create all symlinks and perms at runtime,
+# however, at this point, /sbin/init just won't exist.
+
+if [ "$ver" != "installer" ]; then
+	echo "checking /sbin/init" > /dev/kmsg
+	if ! [ -x /target/sbin/init ]; then
+	    error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
+	    error "exist there, or isn't executable!"
+	    echo "This is likely the result of an interrupted update mangling it beyond usability."
+	    echo "Please include the following debug info:"
+	    ls -l /target/sbin/init
+	    ls -l /target/linuxrc
+	    umount /target
+	    umount /boot_part
+	    support
+	fi
+fi
+
+# XXX: Installer hack #4 - we can't rely on overlayfs to exist.  Manually mount /run.
+if [ "$ver" = "installer" ]; then
+	mount -n -o move /run /target/run
 fi
 
 echo "running jit setup" > /dev/kmsg
@@ -195,8 +238,10 @@ if ! mount -n -o move /boot_part /target/run/boot_part; then
     error "failed to move /boot_part"
     support
 fi
+
 echo "about to exec" > /dev/kmsg
 exec /bin/busybox switch_root /target /sbin/init
+
 echo "exec failed" > /dev/kmsg
 error "switch_root failed..."
 support
