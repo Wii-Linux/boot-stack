@@ -61,7 +61,8 @@ installer_crash_dump() {
 /usr/bin/wiilinux-installer
 ret=$?
 if [ $ret = 0 ]; then
-	# we're installed and ready to go
+	# user chose to abort installation and reboot
+	
 	# unmount everything
 	umount -Rq /mnt/root
 	umount -Rq /mnt/boot
