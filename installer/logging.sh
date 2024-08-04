@@ -2,13 +2,13 @@
 # shellcheck shell=sh
 
 warn() {
-    printf "\x1b[1;33mWARNING!! $1\x1b[0m\n"
+	echo -e "\x1b[1;33mWARNING!! $1\x1b[0m"
 }
 
 error() {
-    printf "\x1b[1;31mERROR!! $1\x1b[0m\n"
+	echo -e "\x1b[1;31mERROR!! $1\x1b[0m"
 }
 
 success() {
-    printf "\x1b[32m$1\x1b[0m\n"
+	echo -e "\x1b[32m$1\x1b[0m"
 }

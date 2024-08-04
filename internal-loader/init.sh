@@ -46,20 +46,19 @@ echo "initrd starting" > /dev/kmsg
 if cat /proc/version | grep -q '\-wii-ios'; then
 	is_ios_kernel=true
 	warn "Running on experimental IOS kernel!  Beware of bugs!"
+else
+	# SD
+	# modprobe gcn-sd
+	modprobe mmc_block
+	modprobe mmc_core
+	modprobe sdhci-of-hlwd
+
+
+	# FS
+	modprobe vfat
+	modprobe squashfs
+	echo "modules loaded" > /dev/kmsg
 fi
-
-
-# SD
-# modprobe gcn-sd
-modprobe mmc_block
-modprobe mmc_core
-modprobe sdhci-of-hlwd
-
-
-# FS
-modprobe vfat
-modprobe squashfs
-echo "modules loaded" > /dev/kmsg
 
 . /support.sh
 
@@ -221,6 +220,7 @@ if [ "$ver" = "installer" ]; then
 fi
 
 echo "running jit setup" > /dev/kmsg
+export boot_part
 /target/jit_setup.sh
 err=$?
 if [ $err != 0 ]; then
@@ -231,12 +231,14 @@ if [ $err != 0 ]; then
     support
 fi
 
-echo "making dir" > /dev/kmsg
-mkdir /target/run/boot_part
-echo "moving mount" > /dev/kmsg
-if ! mount -n -o move /boot_part /target/run/boot_part; then
-    error "failed to move /boot_part"
-    support
+if [ "$is_installer" != "true" ]; then
+	echo "making dir" > /dev/kmsg
+	mkdir /target/run/boot_part
+	echo "moving mount" > /dev/kmsg
+	if ! mount -n -o move /boot_part /target/run/boot_part && umount /boot_part && rmdir /boot_part; then
+	    error "failed to move /boot_part"
+	    support
+	fi
 fi
 
 echo "about to exec" > /dev/kmsg
