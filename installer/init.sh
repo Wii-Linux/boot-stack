@@ -22,7 +22,7 @@ exec < /dev/console > /dev/console 2> /dev/console
 
 reset
 echo "Wii Linux installer init v0.0.1"
-free -h
+ln -s /proc/self/fd /dev/fd
 
 . /logging.sh
 . /support.sh
@@ -54,37 +54,37 @@ installer_crash_dump() {
 	echo '====  Kernel Log messages end  ===='
 	echo
 	echo '==== Installer Log messages start ===='
-	cat /var/log/installer.log
+	cat $logfile
 	echo '====  Installer Log messages end  ===='
 }
 
 /usr/bin/wiilinux-installer
 ret=$?
-if [ $ret = 0 ]; then
+#if [ $ret = 0 ]; then
 	# user chose to abort installation and reboot
 	
 	# unmount everything
-	umount -Rq /mnt/root
-	umount -Rq /mnt/boot
+#	umount -Rq /mnt/root
+#	umount -Rq /mnt/boot
 
 	# just in case
-	grep '/mnt' /proc/mounts | while read l; do
-		i=0
-		for f in $l; do
-			i=$((i + 1))
-			if [ $i = 2 ]; then
-				umount $f
-				break
-			fi
-		done
-	done
+#	grep '/mnt' /proc/mounts | while read l; do
+#		i=0
+#		for f in $l; do
+#			i=$((i + 1))
+#			if [ $i = 2 ]; then
+#				umount $f
+#				break
+#			fi
+#		done
+#	done
 
 	# sync filesystems
-	sync
+#	sync
 
 	# reboot
-	echo b > /proc/sysrq-trigger
-else
+#	echo b > /proc/sysrq-trigger
+#else
 	# failed
 	# reset the terminal, get out of TUI state
 	reset
@@ -121,4 +121,4 @@ else
 	sleep 5
 	echo "Powering down the system failed."
 	sleep inf
-fi
+#fi
