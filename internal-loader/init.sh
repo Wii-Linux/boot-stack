@@ -125,6 +125,7 @@ parts=$(ls "/dev/$card"*)
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
+    "Linux version 2.6"*) ver=installer ;;
     "Linux version 3.15.10"*) ver=installer ;;
     "Linux version 4.4.302-cip80-wii-ios"*) ver=v4_4_302;;
     "Linux version 4.5"*) ver=v4_5_0;;
@@ -223,6 +224,7 @@ echo "running jit setup" > /dev/kmsg
 export boot_part
 /target/jit_setup.sh
 err=$?
+echo "exit with ret=$err" > /dev/kmsg
 if [ $err != 0 ]; then
     error "Uh oh!  Just-in-Time setup for $ver.ldr failed with error code $err!"
     umount /target
@@ -231,7 +233,7 @@ if [ $err != 0 ]; then
     support
 fi
 
-if [ "$is_installer" != "true" ]; then
+if [ "$ver" != "installer" ]; then
 	echo "making dir" > /dev/kmsg
 	mkdir /target/run/boot_part
 	echo "moving mount" > /dev/kmsg

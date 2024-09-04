@@ -27,12 +27,12 @@ if [ "$1" = "installer-step2" ]; then
 	inst_log "jit_setup.sh step 2 begin"
 	inst_log "unmounting /target"
 
-	umount /target/run 2>&1 | inst_log_stdin
-	umount /target 2>&1 | inst_log_stdin
+	umount /target/run
+	umount /target
 
 
 	inst_log "unmounting /boot_part"
-	umount /boot_part 2>&1 | inst_log_stdin
+	umount /boot_part
 
 	# we're now inside of an ext4 fs that lives on zram.
 	# we should be good to migrate the new fs to /target,
@@ -53,6 +53,7 @@ if [ "$1" = "installer-step2" ]; then
 
 
 	# fix shlibs
+	inst_log "fixing libraries"
 	rm -r lib
 	ln -s usr/lib lib
 
@@ -87,11 +88,44 @@ fi
 
 echo -n "" > $logfile
 inst_log "jit_setup.sh step 1 begin"
+inst_log "setting up zram"
+
+# 100MB size, just a guess that it should be fine
+echo 104857600 > /sys/block/zram0/disksize
+
+# make an ext4 fs on the zram dev and mount it, should now have plenty of
+# space to store the new rootfs.
+# XXX: need to chroot here since the installer uses glibc, while the
+# in-kernel ramfs uses uclibc.  Can't exec busybox directly, so need to
+# run it in the context of the new root so it can pull in glibc
+
+inst_log "setting up ext4 filesystem on it"
+export LD_LIBRARY_PATH=/target/usr/lib/
+# XXX: hack, force shared libs to exist temporarily
+mount -t tmpfs tmpfs /target/lib
+cd /target/usr/lib
+cp libc* ld.so.1 libblkid* libuuid* libe2p* libext2fs* libcom* ../../lib
+cd ../../lib
+ln -s libext2fs.so.2.4 libext2fs.so.2
+ln -s libcom_err.so.2.1 libcom_err.so.2
+ln -s libblkid.so.1.1.0 libblkid.so.1
+ln -s libuuid.so.1.3.0 libuuid.so.1
+ln -s libe2p.so.2.3 libe2p.so.2
+
+# no need for a journal when in RAM, it just slows it down
+# XXX: Kernel 3.15 is so damn old that it doesn't support the
+# "metadata_csum_seed" feature.
+LD_LIBRARY_PATH=/target/lib /target/usr/lib/ld.so.1 /target/usr/sbin/mke2fs -t ext4 -O ^has_journal,^metadata_csum_seed /dev/zram0 2>&1 | inst_log_stdin
+cd /
+rm -rf /target/lib/*
+umount /target/lib
+unset LD_LIBRARY_PATH dest
+
+# let's copy everything out to fs
+inst_log "Mounting & copying everything to fs"
 
 mkdir /installer_bootstrap
-mount -t tmpfs tmpfs /installer_bootstrap -o size=56M
-
-inst_log "done mounting tmpfs"
+mount /dev/zram0 /installer_bootstrap -o discard
 
 # log any errors
 max=$(ls /target /target/usr | wc -l)

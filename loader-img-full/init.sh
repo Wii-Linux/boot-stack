@@ -116,14 +116,17 @@ if ! [ -x /target/sbin/init ]; then
 fi
 success "About to switch_root in!"
 umount /run
-echo $?
-mountpoint /
 mount -t tmpfs none /
 if ! mount -n -o move /run/boot_part /target/boot; then
     support
 fi
 
 mount -o remount,rw /target/boot
+
+# XXX: systemd wants more space in /run than it actually gets by default.
+# Fix this here by giving it just a little bit over what it wants (16MB).  It's only 2MB more than the default.
+mount -t tmpfs run /target/run -o size=17M
+
 
 cat /._printk_restore > /proc/sys/kernel/printk
 exec switch_root /target /sbin/init " " "$(cat /._cmdline)"
