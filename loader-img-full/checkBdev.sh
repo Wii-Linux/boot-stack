@@ -121,6 +121,14 @@ else
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
+        ubuntu)
+            ppcDistro="\e[33mUbuntu PPC"
+            ppcDistroHighlighted="\e[31mUbuntu PPC"
+            otherDistro="\e[1;31mUnknown \e[22m\e[33mUbuntu"
+            otherDistroHighlighted="\e[31mUnknown Ubuntu"
+            ppcDistroColorLen="5 5"
+            otherDistroColorLen="16 5"
+            ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
     esac
 fi
