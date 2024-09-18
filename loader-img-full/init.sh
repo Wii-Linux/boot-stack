@@ -82,6 +82,7 @@ for arg in $(cat /proc/cmdline); do
     fi
 done
 
+recoveryShell false
 while true; do
     /bin/boot_menu
     ret=$?
@@ -109,11 +110,11 @@ if ! mount "$bdev" /target; then
     error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
     support
 fi
-if ! [ -x /target/sbin/init ]; then
-    error "/sbin/init isn't executable / doesn't exist in your distro..."
-    error "Cannot possibly continue booting."
-    support
-fi
+#if ! [ -x /target/sbin/init ]; then
+#    error "/sbin/init isn't executable / doesn't exist in your distro..."
+#    error "Cannot possibly continue booting."
+#    support
+#fi
 success "About to switch_root in!"
 umount /run
 mount -t tmpfs none /

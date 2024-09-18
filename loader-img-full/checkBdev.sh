@@ -133,37 +133,35 @@ else
     esac
 fi
 
-resolve_symlink() {
-    link_path=$(readlink "$1")
-    if [ "${link_path#/}" != "$link_path" ]; then
-        # absolute
-        echo "$tmp$link_path"
-    else
-        # relative
-        echo "$1"
-    fi
-}
-
 # do we have /sbin/init?
 if ! [ -f "$tmp/sbin/init" ] && ! [ -L "$tmp/sbin/init" ]; then
     # we may have multiple problems be this point, seperate by line.
     prob "/sbin/init does not exist"
     exitCode=5
-fi
+else
+    # Resolve symlink if it exists
+    if [ -L "$tmp/sbin/init" ]; then
+        link="$(readlink $tmp/sbin/init)"
+        if [ "${link#/}" != "$link" ]; then
+            # absolute symlink
+            init="${tmp}${link}";
+        else
+            init="${tmp}/sbin/${link}"
+        fi
+    fi
 
-if { [ -f "$tmp/sbin/init" ] || [ -L "$tmp/sbin/init" ]; } && ! [ -x "$tmp/sbin/init" ]; then
-    prob "/sbin/init does exist but isn't executable"
-    exitCode=5
-fi
+    if ! [ -x "$init" ]; then
+        prob "/sbin/init does exist but isn't executable"
+        exitCode=5
+    fi
 
-# Resolve symlink if it exists
-resolved_init=$(resolve_symlink "$tmp/sbin/init")
 
-# are we sure we have a PPC distro?
-if { [ -f "$resolved_init" ] || [ -L "$resolved_init" ]; } && ! file -L "$resolved_init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null; then
-    prob '/sbin/init is not for PowerPC'
-    notPPC=true
-    exitCode=5
+    # are we sure we have a PPC distro?
+    if [ -f "$init" ] && ! file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null; then
+        prob '/sbin/init is not for PowerPC'
+        notPPC=true
+        exitCode=5
+    fi
 fi
 
 # do we have a libc?
