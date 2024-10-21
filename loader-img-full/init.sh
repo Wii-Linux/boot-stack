@@ -36,23 +36,12 @@ rm /jit_setup.sh
 . /util.sh
 
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
-# SD Drivers
-# modprobe gcn-sd
-if ! (modprobe mmc_block; modprobe mmc_core; modprobe sdhci-of-hlwd); then
-    error "failed to load SD modules"
-    support
-fi
 
 
 # USB Drivers
-if ! (modprobe usbcore;modprobe ehci-hcd;modprobe ohci-hcd;modprobe hid-generic;modprobe usbhid); then
-    error "failed to load USB modules"
+if ! (modprobe hid-generic;modprobe usbhid); then
+    error "failed to load USB HID (keyboard) modules"
     support
-fi
-
-if ! (modprobe usb-storage; modprobe uas; modprobe sd_mod); then
-	error "failed to load USB storage modules"
-	recoveryShell
 fi
 
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
