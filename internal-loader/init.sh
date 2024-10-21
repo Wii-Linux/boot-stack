@@ -46,18 +46,6 @@ echo "initrd starting" > /dev/kmsg
 if cat /proc/version | grep -q '\-wii-ios'; then
 	is_ios_kernel=true
 	warn "Running on experimental IOS kernel!  Beware of bugs!"
-else
-	# SD
-	# modprobe gcn-sd
-	modprobe mmc_block
-	modprobe mmc_core
-	modprobe sdhci-of-hlwd
-
-
-	# FS
-	modprobe vfat
-	modprobe squashfs
-	echo "modules loaded" > /dev/kmsg
 fi
 
 . /support.sh
