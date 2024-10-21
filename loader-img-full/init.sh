@@ -71,7 +71,6 @@ for arg in $(cat /proc/cmdline); do
     fi
 done
 
-recoveryShell false
 while true; do
     /bin/boot_menu
     ret=$?
