@@ -35,11 +35,6 @@
 #define MAX_BDEV      20
 #define MAX_BDEV_CHAR 32
 
-#define CMDLINE_MAX_CHAR 128
-
-static char cmdline[CMDLINE_MAX_CHAR];
-
-
 typedef struct {
     char name[32];
     char nameHighlighted[32];

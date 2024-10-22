@@ -1,12 +1,8 @@
 #include "include.h"
 static void BOTTOM_Init() {
-    char *hasSetCmdLine = "";
-    if (cmdline[0] != '\0') {
-        hasSetCmdLine = " [*]";
-    }
     fprintf(logfile, "BOTTOM_Init() called\r\n");
     printf("\e[%d;1HPress Up/Down to select an item, Enter to boot", TERM_Height - 1);
-    printf("\e[%d;1Hr: Recovery Shell   c: set /sbin/init cmdline%s", TERM_Height, hasSetCmdLine);
+    printf("\e[%d;1Hr: Recovery Shell%s", TERM_Height, hasSetCmdLine);
     fflush(stdout);
 }
 static void BOTTOM_Destroy() {

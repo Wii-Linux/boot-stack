@@ -118,4 +118,4 @@ mount -t tmpfs run /target/run -o size=17M
 
 
 cat /._printk_restore > /proc/sys/kernel/printk
-exec switch_root /target /sbin/init " " "$(cat /._cmdline 2> /dev/null)"
+exec switch_root '/target' '/sbin/init'

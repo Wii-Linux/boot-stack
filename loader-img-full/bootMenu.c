@@ -12,15 +12,6 @@ static void doCleanup() {
 #include "term.c"
 
 
-static void CMD_Edit() {
-    doCleanup();
-    printf("\e[%d;1HEnter cmdline: ", TERM_Height - 3);
-    scanf("%s", &cmdline);
-    printf("\e[%d;1H%*c", TERM_Height - 3, TERM_Width, ' ');
-    TERM_Init(&oldt);
-    BOTTOM_Init();
-}
-
 static void BOOT_Go() {
     doCleanup();
     TIMER_Stop();
@@ -37,17 +28,6 @@ static void BOOT_Go() {
     write(fd, bdev, strlen(bdev));
     close(fd);
     BOTTOM_Log("Wrote /._bootdev, exiting with status 0 to tell init to go boot it\r\n");
-
-    if (cmdline[0] != '\0') {
-        fd = open("/._cmdline", O_CREAT | O_WRONLY, 0777);
-        if (fd == -1) {
-            BOTTOM_Log("opening /._cmdline error: %s (%d)\r\n", strerror(errno), errno);
-            exit(1);
-        }
-        write(fd, cmdline, strlen(cmdline));
-        close(fd);
-        BOTTOM_Log("Wrote /._cmdline");
-    }
     #endif
 
     exit(0);
@@ -145,9 +125,6 @@ int main() {
                     // when exited, restart boot_menu.
                     doCleanup();
                     exit(2);
-                case 'c':
-                    CMD_Edit();
-                    break;
                 case '\n': // Enter key
                     BOOT_Go();
                     break;
