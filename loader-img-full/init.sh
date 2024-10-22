@@ -16,18 +16,15 @@ fi
 
 exec < /dev/console > /dev/console 2> /dev/console
 
-# manual version of "reset" utility, but don't erase tux
-# printf "\033c\033(B\033[m"
-# printf "\033[6;1H\033[J"
 reset
-echo "Wii Linux loader.img init v0.0.1"
+echo "Wii Linux loader.img init v0.1.0"
 
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
 echo "loader.img starting" > /dev/kmsg
 
-# nuke jit_setup.sh so the user can't screw up their initramfs and be forced to reboot
+# nuke jit_setup.sh so the user can't screw up their initramfs
 rm /jit_setup.sh
 
 . /logging.sh
@@ -37,18 +34,8 @@ rm /jit_setup.sh
 
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
-
-# USB Drivers
-if ! (modprobe hid-generic;modprobe usbhid); then
-    error "failed to load USB HID (keyboard) modules"
-    support
-fi
-
-printf "1\t4\t1\t7" > /proc/sys/kernel/printk
-
 # Filesystem drivers
 modprobe ext4
-modprobe vfat
 
 # global variables
 auto_boot_partition=""
@@ -92,7 +79,12 @@ while true; do
 done
 mkdir /target
 
-bdev=$(cat /._bootdev)
+bdev=$(cat /._bootdev 2>/dev/null)
+if [ "$bdev" = "" ]; then
+	error "internal error - bootMenu returned empty bdev"
+	support
+fi
+
 echo "mounting $bdev"
 if ! mount "$bdev" /target; then
     error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
@@ -103,7 +95,8 @@ fi
 #    error "Cannot possibly continue booting."
 #    support
 #fi
-success "About to switch_root in!"
+
+echo "fixing up filesystems"
 umount /run
 mount -t tmpfs none /
 if ! mount -n -o move /run/boot_part /target/boot; then
@@ -113,9 +106,15 @@ fi
 mount -o remount,rw /target/boot
 
 # XXX: systemd wants more space in /run than it actually gets by default.
-# Fix this here by giving it just a little bit over what it wants (16MB).  It's only 2MB more than the default.
+# Fix this here by giving it just a little bit over what it wants (16MB).
+# It's only 2MB more than the default.
 mount -t tmpfs run /target/run -o size=17M
 
 
 cat /._printk_restore > /proc/sys/kernel/printk
+success "About to switch_root in!"
+# XXX: switch_root is dumb and requires a /init to do... something, with.
+# create it here in RAM just so that it's happy
+touch /init
+
 exec switch_root '/target' '/sbin/init'
