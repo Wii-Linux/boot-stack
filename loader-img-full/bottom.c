@@ -2,7 +2,7 @@
 static void BOTTOM_Init() {
     fprintf(logfile, "BOTTOM_Init() called\r\n");
     printf("\e[%d;1HPress Up/Down to select an item, Enter to boot", TERM_Height - 1);
-    printf("\e[%d;1Hr: Recovery Shell%s", TERM_Height, hasSetCmdLine);
+    printf("\e[%d;1Hr: Recovery Shell%s", TERM_Height);
     fflush(stdout);
 }
 static void BOTTOM_Destroy() {
