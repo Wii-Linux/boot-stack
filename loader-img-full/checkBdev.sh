@@ -70,33 +70,41 @@ if ! mount "$1" "$tmp" -t "$3" -o ro; then
     exit 1
 fi
 
-# is it even a Linux distro?
+# is it even a Linux (or Android) distro?
 if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/bin" ] || [ -L "$tmp/bin" ]; }; then
-    umount "$tmp"
-    rmdir "$tmp"
-    exit 3
+    # not Normal Linux.... is it Android?
+    if ! [ -d "$tmp/system" ] || ! [ -d "$tmp/system/bin" ] || ! [ -d "$tmp/system/usr" ]; then
+        # neither Linux nor Android, give up
+        umount "$tmp"
+        rmdir "$tmp"
+        exit 3
+    fi
+
+    # it is Android!
+    android=true
 fi
 
-for f in etc/os-release usr/lib/os-release usr/share/os-release; do
-    if . "$tmp/$f"; then
+if [ "$android" != "true" ]; then
+    for f in etc/os-release usr/lib/os-release usr/share/os-release; do
+        if . "$tmp/$f"; then
         # we found one!
         gotOSRel=true
         break
-    fi
-done
-# these are not a fatal errors, but we
-# still can't know what distro it is...
-if [ "$gotOSRel" != "true" ]; then
-    echo "Unknown" > "$distro"
-    prob "no os-release file"
-    exitCode=4
-elif [ "$ID" = "" ]; then
-    echo "Unknown" > "$distro"
-    prob "bad os-release file"
-    exitCode=4
-else
-    # we have ID from an os-release file!
-    case $ID in
+        fi
+    done
+    # these are not a fatal errors, but we
+    # still can't know what distro it is...
+    if [ "$gotOSRel" != "true" ]; then
+        echo "Unknown" > "$distro"
+        prob "no os-release file"
+        exitCode=4
+    elif [ "$ID" = "" ]; then
+        echo "Unknown" > "$distro"
+        prob "bad os-release file"
+        exitCode=4
+    else
+        # we have ID from an os-release file!
+        case $ID in
         arch)
             ppcDistro="\e[1;36mArchPOWER"
             ppcDistroHighlighted="\e[36mArchPOWER"
@@ -130,44 +138,59 @@ else
             otherDistroColorLen="16 5"
             ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
-    esac
+        esac
+    fi
+else
+    ppcDistro="\e[1;32mPPCDroid"
+    ppcDistroHighlighted="\e[32mPPCDroid"
+    otherDistro="\e[1;31mUnknown \e[32mAndroid"
+    otherHighlightedDistro="\e[31mUnknown \e[32mAndroid"
+    ppcDistroColorLen="7 5"
+    otherDistroColorLen="12 10"
 fi
 
-# do we have /sbin/init?
-if ! [ -f "$tmp/sbin/init" ] && ! [ -L "$tmp/sbin/init" ]; then
-    # we may have multiple problems be this point, seperate by line.
-    prob "/sbin/init does not exist"
-    exitCode=5
-else
-    # Resolve symlink if it exists
-    if [ -L "$tmp/sbin/init" ]; then
-        link="$(readlink $tmp/sbin/init)"
-        if [ "${link#/}" != "$link" ]; then
-            # absolute symlink
-            init="${tmp}${link}";
-        else
-            init="${tmp}/sbin/${link}"
+
+# do we have /sbin/init (or /init if Android)?
+if [ "$android" != "true" ]; then
+    if ! [ -f "$tmp/sbin/init" ] && ! [ -L "$tmp/sbin/init" ]; then
+        # we may have multiple problems be this point, seperate by line.
+        prob "/sbin/init does not exist"
+        exitCode=5
+    else
+        # Resolve symlink if it exists
+        if [ -L "$tmp/sbin/init" ]; then
+            link="$(readlink $tmp/sbin/init)"
+            if [ "${link#/}" != "$link" ]; then
+                # absolute symlink
+                init="${tmp}${link}"
+            else
+                init="${tmp}/sbin/${link}"
+            fi
         fi
     fi
-
-    if ! [ -x "$init" ]; then
-        prob "/sbin/init does exist but isn't executable"
-        exitCode=5
-    fi
-
-
-    # are we sure we have a PPC distro?
-    if [ -f "$init" ] && ! file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null; then
-        prob '/sbin/init is not for PowerPC'
-        notPPC=true
-        exitCode=5
-    fi
+else
+    init="$tmp/init"
 fi
 
-# do we have a libc?
-if ! find -L "$tmp/lib/" -maxdepth 1 -name 'libc.s*' -quit; then
-    prob 'no libc detected'
+if ! [ -x "$init" ]; then
+    prob "/sbin/init does exist but isn't executable"
     exitCode=5
+fi
+
+
+# are we sure we have a PPC distro?
+if [ -f "$init" ] && ! file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null; then
+    prob '/sbin/init is not for PowerPC'
+    notPPC=true
+    exitCode=5
+fi
+
+if [ "$android" != "true" ]; then
+    # do we have a libc?
+    if ! find -L "$tmp/lib/" -maxdepth 1 -name 'libc.s*' -quit; then
+        prob 'no libc detected'
+        exitCode=5
+    fi
 fi
 
 umount "$tmp"
@@ -186,5 +209,7 @@ else
     printf "$ppcDistroColorLen" > "$colors"
 fi
 
-
+if [ "$android" = "true" ]; then
+    touch /._android$2
+fi
 exit $exitCode

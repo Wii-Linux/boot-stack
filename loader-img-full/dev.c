@@ -53,9 +53,10 @@ static void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
 }
 
 
-static bool _readDistro(char *suffix, char *distroName, char *distroNameHighlighted, char *problems, int *colorLen, int *colorLenHighlighted) {
+static bool _readDistro(char *suffix, char *distroName, char *distroNameHighlighted, char *problems, int *colorLen, int *colorLenHighlighted, bool *isAndroid) {
     char str[256];
     int fd;
+    bool ret = false;
 
     snprintf(str, sizeof(str), "/._distro%s", suffix);
     fd = open(str, O_RDONLY);
@@ -109,9 +110,22 @@ static bool _readDistro(char *suffix, char *distroName, char *distroNameHighligh
             *colorLen = atoi(str);
             *colorLenHighlighted = atoi(inBetween + 1);
         }
-        return true;
+        ret = true;
     }
-    return false;
+    close(fd);
+    remove(str);
+
+    // check if distro is Android
+    snprintf(str, sizeof(str), "/._android%s", suffix);
+    fd = open(str, O_RDONLY);
+
+    // fd == -1, file doesn't exist, not android
+    // fd != -1, file exists (valid fd), is android
+    *isAndroid = (fd != -1);
+    close(fd);
+    remove(str);
+
+    return ret;
 }
 
 
@@ -172,6 +186,7 @@ static void DEV_Scan(char* block_device) {
     bool canBoot = true;
     bool color = false;
     bool paused = TIMER_Paused;
+    bool android = false;
 
     fprintf(logfile, "DEV_Scan(): scan initiated for \"%s\"\r\n", block_device);
 
@@ -221,7 +236,7 @@ static void DEV_Scan(char* block_device) {
             case 0:
                 // ._problems[suffix] may exist, and ._distro[suffix] will
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
                 break;
             case 1:
                 // fatal error checking bdev, ._problems[suffix] will exist, ._distro[name] will not
@@ -238,17 +253,17 @@ static void DEV_Scan(char* block_device) {
                 // not a Linux distro at all, or corrupted beyond repair, don't even list it.
                 fprintf(logfile, "DEV_Scan(): \"%s\" is not a Linux distro\r\n", block_device);
                 blkid_free_probe(pr);
-		if (!paused) TIMER_Resume();
+        if (!paused) TIMER_Resume();
                 return;
             case 4:
                 // non-fatal error, checking continued, distro will boot
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
                 break;
             case 5:
                 // distro will not boot, but did not stop it from continuing to check
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
                 canBoot = false;
                 break;
             default:
@@ -278,6 +293,7 @@ static void DEV_Scan(char* block_device) {
     items[ITEM_NumItems].colorName = color;
     items[ITEM_NumItems].colorLen = colorLen;
     items[ITEM_NumItems].colorLenHighlighted = colorLenHighlighted;
+    items[ITEM_NumItems].android = android;
     ITEM_NumItems++;
 
     if (!paused) TIMER_Resume();

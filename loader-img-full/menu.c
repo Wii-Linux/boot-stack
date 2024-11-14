@@ -6,7 +6,6 @@ static void MENU_DrawLine(int i, bool forcePad) {
     char *color = "\e[0m";
     char *hasProblems = "";
 
-
     if (ITEM_NumItems > 99) {sprintf(num, "%03d", i);}
     else if (ITEM_NumItems > 9) {sprintf(num, "%02d", i);}
     else {sprintf(num, "%d", i);}
@@ -25,7 +24,7 @@ static void MENU_DrawLine(int i, bool forcePad) {
         hasProblems=", Problems: ";
     }
 
-    int len = sprintf(str, "%s: %s%s on %s\e[1;33m%s%s%s (%s)",
+    int len = sprintf(str, "%s: %s on %s\e[1;33m%s%s%s (%s)",
         num, name, color, items[i].bdevName, hasProblems, items[i].problems, color, items[i].fsType
     );
     printf("%s", str);
@@ -48,7 +47,7 @@ static void MENU_DrawLine(int i, bool forcePad) {
 }
 
 static void MENU_FullRedraw() {
-    char *title = "Wii Linux Boot Menu v0.0.3";
+    char *title = "Wii Linux Boot Menu v0.1.0";
     int numSpc = (TERM_Width / 2) - (strlen(title) / 2);
     printf("\e[1;1H\e[2J\r\n");
     printf("\e[1;37m%*c%s\e[0m\r\n", numSpc, ' ', title);

@@ -17,7 +17,7 @@ fi
 exec < /dev/console > /dev/console 2> /dev/console
 
 reset
-echo "Wii Linux loader.img init v0.1.0"
+echo "Wii Linux loader.img init v0.2.0"
 
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
@@ -58,6 +58,7 @@ for arg in $(cat /proc/cmdline); do
     fi
 done
 
+recoveryShell false
 while true; do
     /bin/boot_menu
     ret=$?
@@ -85,6 +86,8 @@ if [ "$bdev" = "" ]; then
 	support
 fi
 
+android=$(cat /._isAndroid 2>/dev/null)
+
 echo "mounting $bdev"
 if ! mount "$bdev" /target; then
     error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
@@ -99,22 +102,30 @@ fi
 echo "fixing up filesystems"
 umount /run
 mount -t tmpfs none /
-if ! mount -n -o move /run/boot_part /target/boot; then
-    support
+
+if [ "$android" != "true" ]; then
+    if ! mount -n -o move /run/boot_part /target/boot; then
+        support
+    fi
+    mount -o remount,rw /target/boot
+
+    # XXX: systemd wants more space in /run than it actually gets by default.
+    # Fix this here by giving it just a little bit over what it wants (16MB).
+    # It's only 2MB more than the default.
+    mount -t tmpfs run /target/run -o size=17M
 fi
-
-mount -o remount,rw /target/boot
-
-# XXX: systemd wants more space in /run than it actually gets by default.
-# Fix this here by giving it just a little bit over what it wants (16MB).
-# It's only 2MB more than the default.
-mount -t tmpfs run /target/run -o size=17M
 
 
 cat /._printk_restore > /proc/sys/kernel/printk
 success "About to switch_root in!"
-# XXX: switch_root is dumb and requires a /init to do... something, with.
-# create it here in RAM just so that it's happy
-touch /init
 
-exec switch_root '/target' '/sbin/init'
+
+if [ "$android" != "true" ]; then
+    # XXX: switch_root is dumb and requires a /init to do... something, with.
+    # create it here in RAM just so that it's happy
+    touch /init
+    exec switch_root '/target' '/sbin/init'
+else
+    exec switch_root '/target' '/init'
+fi
+

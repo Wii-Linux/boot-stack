@@ -43,6 +43,7 @@ typedef struct {
     char fsType[8];
     bool canBoot;
     bool colorName;
+    bool android;
     int colorLen;
     int colorLenHighlighted;
 } Item;

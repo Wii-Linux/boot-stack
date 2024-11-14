@@ -28,6 +28,18 @@ static void BOOT_Go() {
     write(fd, bdev, strlen(bdev));
     close(fd);
     BOTTOM_Log("Wrote /._bootdev, exiting with status 0 to tell init to go boot it\r\n");
+
+    if (items[MENU_Selected].android) {
+	    fd = open("/._isAndroid", O_CREAT | O_WRONLY, 0777);
+	    if (fd == -1) {
+		    BOTTOM_Log("openning /._isAndroid error: %s (%d)\r\n", strerror(errno), errno);
+		    exit(1);
+	    }
+
+	    write(fd, "true", 4);
+	    close(fd);
+	    BOTTOM_Log("Wrote /._isAndroid to tell init that this is Android\r\n");
+    }
     #endif
 
     exit(0);
