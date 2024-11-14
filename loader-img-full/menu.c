@@ -24,7 +24,7 @@ static void MENU_DrawLine(int i, bool forcePad) {
         hasProblems=", Problems: ";
     }
 
-    int len = sprintf(str, "%s: %s on %s\e[1;33m%s%s%s (%s)",
+    int len = sprintf(str, "%s: %s%s on %s\e[1;33m%s%s%s (%s)",
         num, name, color, items[i].bdevName, hasProblems, items[i].problems, color, items[i].fsType
     );
     printf("%s", str);
