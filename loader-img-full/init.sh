@@ -4,7 +4,6 @@ if ! [ -c /dev/tty0 ]; then
     mount -t devtmpfs dev /dev
     mount -t sysfs sys /sys
     mount -t proc proc /proc
-    mount -t tmpfs run /run
 fi
 # still nothing?  probably failed
 if ! [ -c /dev/tty0 ]; then
@@ -17,7 +16,7 @@ fi
 exec < /dev/console > /dev/console 2> /dev/console
 
 reset
-echo "Wii Linux loader.img init v0.3.0"
+echo "Wii Linux loader.img init v0.3.1"
 
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
@@ -88,7 +87,7 @@ while true; do
 	echo "moving new rootfs into place!"
 	ls -1A /mnt/.wii-linux-migrate/ | while read -r l; do
 		echo "moving /$l"
-		mv /mnt/.wii-linux-migrate/$l /mnt/$l
+		mv "/mnt/.wii-linux-migrate/$l" "/mnt/$l"
 	done
 
 	echo "done!"
@@ -102,8 +101,7 @@ while true; do
 	rm /run/boot_part/wiilinux/migrate.mii
 
 	success "MIGRATION COMPLETE"
-	echo "Press enter to continue loading the boot menu!"
-	read
+	sleep 5
 done
 
 
@@ -148,7 +146,6 @@ fi
 #fi
 
 echo "fixing up filesystems"
-umount /run
 mount -t tmpfs none /
 
 if [ "$android" != "true" ]; then
@@ -160,13 +157,12 @@ if [ "$android" != "true" ]; then
     # XXX: systemd wants more space in /run than it actually gets by default.
     # Fix this here by giving it just a little bit over what it wants (16MB).
     # It's only 2MB more than the default.
-    mount -t tmpfs run /target/run -o size=17M
+    mount -t tmpfs run /target/run -o size=20M
 fi
 
 
 cat /._printk_restore > /proc/sys/kernel/printk
 success "About to switch_root in!"
-
 
 if [ "$android" != "true" ]; then
     # XXX: switch_root is dumb and requires a /init to do... something, with.
@@ -176,4 +172,3 @@ if [ "$android" != "true" ]; then
 else
     exec switch_root '/target' '/init'
 fi
-

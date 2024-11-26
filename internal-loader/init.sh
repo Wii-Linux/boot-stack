@@ -150,8 +150,8 @@ if [ "$boot_part" = "" ]; then
             continue
         fi
         echo "Trying partition $part..."
-	
-	# XXX: Installer hack #1 - check for raw dir in case of installer
+
+        # XXX: Installer hack #1 - check for raw dir in case of installer
         if mount "$part" /boot_part -t vfat -o ro && { [ -f "/boot_part/wiilinux/$ver.ldr" ] || [ -d "/boot_part/wiilinux/$ver" ]; }; then
             boot_part=$part
             break
