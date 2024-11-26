@@ -17,7 +17,7 @@ fi
 exec < /dev/console > /dev/console 2> /dev/console
 
 reset
-echo "Wii Linux loader.img init v0.2.0"
+echo "Wii Linux loader.img init v0.3.0"
 
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
@@ -57,6 +57,55 @@ for arg in $(cat /proc/cmdline); do
         esac
     fi
 done
+
+while true; do
+	if ! [ -f /run/boot_part/wiilinux/migrate.mii ]; then
+		break
+	fi
+
+	clear
+	echo "ENTERING MIGRATION ASSISTANT"
+	migratePart="$(cat /run/boot_part/wiilinux/migrate.mii)"
+
+	if ! [ -b "$migratePart" ]; then
+		error "$migratePart does not exist for migration!"
+		recoveryShell false
+	fi
+
+	if ! mount -o rw "$migratePart" /mnt; then
+		error "failed to mount $migratePart for migration!"
+		support
+	fi
+
+	echo "Now DELETING old rootfs!"
+
+	ls -1A /mnt | grep -v '.wii-linux-migrate' | while read -r l; do
+		echo "now deleting /$l..."
+		rm -rf "/mnt/$l"
+	done
+
+	echo "old rootfs DELETED!"
+	echo "moving new rootfs into place!"
+	ls -1A /mnt/.wii-linux-migrate/ | while read -r l; do
+		echo "moving /$l"
+		mv /mnt/.wii-linux-migrate/$l /mnt/$l
+	done
+
+	echo "done!"
+	echo "deleting temporary folder"
+	rmdir /mnt/.wii-linux-migrate
+
+	echo "unmounting"
+	umount /mnt
+
+	echo "deleting marker"
+	rm /run/boot_part/wiilinux/migrate.mii
+
+	success "MIGRATION COMPLETE"
+	echo "Press enter to continue loading the boot menu!"
+	read
+done
+
 
 while true; do
     /bin/boot_menu
