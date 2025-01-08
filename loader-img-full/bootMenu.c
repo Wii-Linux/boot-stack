@@ -46,11 +46,14 @@ static void BOOT_Go() {
 }
 #include "menu.c"
 
-int main() {
+int main(int argc, char *argv[]) {
     char bdevs   [MAX_BDEV][MAX_BDEV_CHAR];
     char bdevsOld[MAX_BDEV][MAX_BDEV_CHAR];
     char added   [MAX_BDEV][MAX_BDEV_CHAR];
     char removed [MAX_BDEV][MAX_BDEV_CHAR];
+
+    if (argc >= 2 && strcmp(argv[1], "--ppcdroid") == 0) ARGS_IsPPCDroid = true;
+
     TERM_Init(&oldt);
 
     logfile = fopen("log.txt", "w+");

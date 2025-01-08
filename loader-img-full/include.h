@@ -65,4 +65,6 @@ static struct termios oldt;
 
 static FILE *logfile;
 
+static bool ARGS_IsPPCDroid = false;
+
 static void MENU_Redraw(bool resize, bool full_redraw);

@@ -125,6 +125,11 @@ static bool _readDistro(char *suffix, char *distroName, char *distroNameHighligh
     close(fd);
     remove(str);
 
+    if (!*isAndroid && ARGS_IsPPCDroid) {
+        strcat(problems, "Trying to boot Linux on PPCDroid kernel");
+        return false;
+    }
+
     return ret;
 }
 

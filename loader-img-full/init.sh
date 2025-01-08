@@ -57,6 +57,11 @@ for arg in $(cat /proc/cmdline); do
 	fi
 done
 
+if cat /proc/version | grep -q -- '-ppcdroid'; then
+	ppcdroid_only=true
+	bootmenu_args="--ppcdroid"
+fi
+
 while true; do
 	if ! [ -f /run/boot_part/wiilinux/migrate.mii ]; then
 		break
@@ -116,7 +121,7 @@ done
 
 
 while true; do
-	/bin/boot_menu
+	/bin/boot_menu "$bootmenu_args"
 	ret=$?
 	if [ $ret = 0 ] && [ -f /._bootdev ]; then
 		# we got a selection, let's go!
@@ -159,6 +164,11 @@ echo "fixing up filesystems"
 mount -t tmpfs none /
 
 if [ "$android" != "true" ]; then
+	if [ "$ppcdroid_only" = "true" ]; then
+		error "Trying to boot a Linux distro on an Android kernel!!!"
+		error "This WILL backfire horribly, but letting you try anyways..."
+		sleep 5
+	fi
 	if ! mount -n -o move /run/boot_part /target/boot; then
 		support
 	fi
