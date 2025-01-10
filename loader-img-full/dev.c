@@ -23,10 +23,10 @@ static void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
     while ((ent = readdir(dir)) != NULL) {
         char path[261];
         if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "loop", 4) == 0) continue;
+        if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "zram", 4) == 0) continue;
         #ifndef PROD_BUILD
             // Wii will never have any of these, but filter these out for debug builds
             // because they'll be running on a PC, and we don't care about performance there.
-            if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "zram", 4) == 0) continue;
             if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nbd", 4) == 0) continue;
             if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nfs", 4) == 0) continue;
         #endif
@@ -53,6 +53,7 @@ static void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
 }
 
 
+static void addProblem(char *str);
 static bool _readDistro(char *suffix, char *distroName, char *distroNameHighlighted, char *problems, int *colorLen, int *colorLenHighlighted, bool *isAndroid) {
     char str[256];
     int fd;
@@ -125,14 +126,13 @@ static bool _readDistro(char *suffix, char *distroName, char *distroNameHighligh
     close(fd);
     remove(str);
 
-    if (!*isAndroid && ARGS_IsPPCDroid) {
-        strcat(problems, "Trying to boot Linux on PPCDroid kernel");
+    if (fd == -1 && ARGS_IsPPCDroid) {
+        addProblem("Linux distro on PPCDroid kernel");
         return false;
     }
 
     return ret;
 }
-
 
 static void addProblem(char *str) {
     printf("\r\n\r\n%d %d\r\n\r\n", sizeof(___problems[0]), ___problemsIndex);

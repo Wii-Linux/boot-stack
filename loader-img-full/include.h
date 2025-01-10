@@ -17,6 +17,7 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <sys/utsname.h>
 
 #include <blkid/blkid.h>
 
@@ -31,9 +32,9 @@
 
 // #define DEBUG_FORCE_FULLREDRAW
 
-#define MAX_ITEMS     20
-#define MAX_BDEV      20
-#define MAX_BDEV_CHAR 32
+#define MAX_ITEMS     7
+#define MAX_BDEV      10
+#define MAX_BDEV_CHAR 16
 
 typedef struct {
     char name[32];

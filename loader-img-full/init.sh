@@ -57,7 +57,9 @@ for arg in $(cat /proc/cmdline); do
 	fi
 done
 
-if cat /proc/version | grep -q -- '-ppcdroid'; then
+if grep -q -- '-ppcdroid' /proc/version; then
+	warn "PPCDroid-only kernel detected.  Be warned, this is not stable!"
+	sleep 2
 	ppcdroid_only=true
 	bootmenu_args="--ppcdroid"
 fi

@@ -10,9 +10,6 @@ if ! [ -d /target ] || [ -f /.rw-loader-img ]; then
     exit 1
 fi
 
-# We are clear for takeoff, go setup overlayfs in preparation for switch_root
-insmod /target/lib/modules/$(/target/bin/uname -r)/kernel/fs/overlayfs/overlay.ko
-
 mount -t tmpfs run /target/run
 mkdir -p /target/run/overlay_work /target/run/overlay_upper
 # mount -t tmpfs -o size=50% tmpfs /target/run/overlay_work

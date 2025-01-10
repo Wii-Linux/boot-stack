@@ -46,13 +46,26 @@ static void BOOT_Go() {
 }
 #include "menu.c"
 
-int main(int argc, char *argv[]) {
+int main() {
     char bdevs   [MAX_BDEV][MAX_BDEV_CHAR];
     char bdevsOld[MAX_BDEV][MAX_BDEV_CHAR];
     char added   [MAX_BDEV][MAX_BDEV_CHAR];
     char removed [MAX_BDEV][MAX_BDEV_CHAR];
+    struct utsname tmp;
 
-    if (argc >= 2 && strcmp(argv[1], "--ppcdroid") == 0) ARGS_IsPPCDroid = true;
+    // XXX: HACK!  Somehow, and I have absolutely no damned idea how,
+    // uClibc botches argument handling!  argc turns into argv, and
+    // argv turns into envp.
+    //
+    // I have absolutely no idea how this is possible, but no
+    // matter what I've tried, that's the result I've gotten.
+    // So working around it here by manually checking
+    // if we're a PPCDroid kernel or not.
+    uname(&tmp);
+
+    // null if no match, thus not PPCDroid kernel, and evaluating to false
+    // non-null if match found, thus true
+    ARGS_IsPPCDroid = (strstr(tmp.release, "ppcdroid") != NULL);
 
     TERM_Init(&oldt);
 
