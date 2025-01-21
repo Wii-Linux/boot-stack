@@ -180,6 +180,9 @@ if [ "$android" != "true" ]; then
 	# Fix this here by giving it just a little bit over what it wants (16MB).
 	# It's only 2MB more than the default.
 	mount -t tmpfs run /target/run -o size=20M
+
+	# Debian won't ever mount /dev for some reason...
+	mount -t devtmpfs devtmpfs /target/dev
 fi
 
 
