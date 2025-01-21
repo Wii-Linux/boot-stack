@@ -86,15 +86,30 @@ fi
 
 if [ "$android" != "true" ]; then
     for f in etc/os-release usr/lib/os-release usr/share/os-release; do
-        if . "$tmp/$f"; then
-        # we found one!
-        gotOSRel=true
-        break
+        if [ -f "$tmp/$f" ] && . "$tmp/$f"; then
+            # we found one!
+            gotOSRel=true
+            break
         fi
     done
+    # just in case... are we an old copy of Debian?
+    # we can give more info if so.
+    if [ -f "$tmp/etc/debian_version" ]; then
+        # yes!  but which...
+        case "$(cat "$tmp/etc/debian_version")" in
+            4.*) ID="debian-etch" ;;
+            5.*) ID="debian-lenny" ;;
+            8.*) ID="debian-jessie" ;;
+            12.*) ID="debian-bookworm" ;;
+            13.*) ID="debian-trixie" ;;
+            *) ID="debian" ;;
+        esac
+        gotOSRel=true
+    fi
     # these are not a fatal errors, but we
     # still can't know what distro it is...
     if [ "$gotOSRel" != "true" ]; then
+
         echo "Unknown" > "$distro"
         prob "no os-release file"
         exitCode=4
@@ -113,9 +128,49 @@ if [ "$android" != "true" ]; then
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
+        debian-trixie)
+            ppcDistro="\e[1;31mDebian-Ports 13 (trixie) PPC"
+            ppcDistroHighlighted="\e[31mDebian-Ports 13 (trixie) PPC"
+            otherDistro="\e[1;31mUnknown Debian 13 (trixie)"
+            otherDistroHighlighted="\e[31mUnknown Debian 13 (trixie)"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="7 5"
+            ;;
+        debian-bookworm)
+            ppcDistro="\e[1;31mDebian-Ports 12 (bookworm) PPC"
+            ppcDistroHighlighted="\e[31mDebian-Ports 12 (bookworm) PPC"
+            otherDistro="\e[1;31mUnknown Debian 12 (bookworm)"
+            otherDistroHighlighted="\e[31mUnknown Debian 12 (bookworm)"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="7 5"
+            ;;
+        debian-jessie)
+            ppcDistro="\e[1;31mDebian 8 (jessie) PPC"
+            ppcDistroHighlighted="\e[31mDebian 8 (jessie) PPC"
+            otherDistro="\e[1;31mUnknown Debian 8 (jessie)"
+            otherDistroHighlighted="\e[31mUnknown Debian 8 (jessie)"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="7 5"
+            ;;
+        debian-lenny)
+            ppcDistro="\e[1;31mDebian 5 (lenny) PPC"
+            ppcDistroHighlighted="\e[31mDebian 5 (lenny) PPC"
+            otherDistro="\e[1;31mUnknown Debian 5 (lenny)"
+            otherDistroHighlighted="\e[31mUnknown Debian 5 (lenny)"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="7 5"
+            ;;
+        debian-etch)
+            ppcDistro="\e[1;31mDebian 4 (etch) PPC"
+            ppcDistroHighlighted="\e[31mDebian 4 (etch) PPC"
+            otherDistro="\e[1;31mUnknown Debian 4 (etch)"
+            otherDistroHighlighted="\e[31mUnknown Debian 4 (etch)"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="7 5"
+            ;;
         debian)
-            ppcDistro="\e[1;31mDebian-Ports PPC"
-            ppcDistroHighlighted="\e[31mDebian-Ports PPC"
+            ppcDistro="\e[1;31mDebian PPC (Unknown version)"
+            ppcDistroHighlighted="\e[31mDebian PPC (Unknown version)"
             otherDistro="\e[1;31mUnknown Debian"
             otherDistroHighlighted="\e[31mUnknown Debian"
             ppcDistroColorLen="7 5"
@@ -166,6 +221,9 @@ if [ "$android" != "true" ]; then
             else
                 init="${tmp}/sbin/${link}"
             fi
+        else
+            # regular file
+            init="${tmp}/sbin/init"
         fi
     fi
 else
