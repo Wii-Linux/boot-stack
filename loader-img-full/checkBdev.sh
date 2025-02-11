@@ -193,6 +193,14 @@ if [ "$android" != "true" ]; then
             ppcDistroColorLen="5 7"
             otherDistroColorLen="16 16"
             ;;
+        chimera)
+            ppcDistro="\e[33mChimera PPC"
+            ppcDistroHighlighted="\e[31mChimera PPC"
+            otherDistro="\e[1;31mUnknown \e[22m\e[33mChimera"
+            otherDistroHighlighted="\e[31mUnknown Chimera"
+            ppcDistroColorLen="5 5"
+            otherDistroColorLen="16 5"
+            ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
     fi
