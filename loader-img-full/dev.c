@@ -243,29 +243,29 @@ static void DEV_Scan(char* block_device) {
                 _readProblems(suffix);
                 color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
                 break;
-            case 1:
+            case 101:
                 // fatal error checking bdev, ._problems[suffix] will exist, ._distro[name] will not
                 _readProblems(suffix);
                 strcpy(distroName, "Unknown");
                 break;
-            case 2:
+            case 102:
                 // fatal internal error (we gave it bad args?), ._problems will exist with no suffix, nothing related to the name will
                 _readProblems("");
                 blkid_free_probe(pr);
                 strcpy(distroName, "Unknown");
                 break;
-            case 3:
+            case 103:
                 // not a Linux distro at all, or corrupted beyond repair, don't even list it.
                 fprintf(logfile, "DEV_Scan(): \"%s\" is not a Linux distro\r\n", block_device);
                 blkid_free_probe(pr);
         if (!paused) TIMER_Resume();
                 return;
-            case 4:
+            case 104:
                 // non-fatal error, checking continued, distro will boot
                 _readProblems(suffix);
                 color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
                 break;
-            case 5:
+            case 105:
                 // distro will not boot, but did not stop it from continuing to check
                 _readProblems(suffix);
                 color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);

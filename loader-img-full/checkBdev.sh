@@ -4,48 +4,48 @@
 
 
 # EXIT CODES:
-# 0 - all is good, check /._problems[suffix]
-#     and /._distro[suffix] for the results
+# 0   - all is good, check /._problems[suffix]
+#       and /._distro[suffix] for the results
 #
-# 1 - fatal error attempting to check
-#     info about the block device.
-#     check /._problems[suffix] for what happened
+# 101 - fatal error attempting to check
+#       info about the block device.
+#       check /._problems[suffix] for what happened
 #
-# 2 - fatal internal error, likely caused by
-#     faulty intput to the script.  Check
-#     /._problems for what happened (no suffix)
+# 102 - fatal internal error, likely caused by
+#       faulty intput to the script.  Check
+#       /._problems for what happened (no suffix)
 #
-# 3 - bdev is not a linux distro, no files created.
+# 103 - bdev is not a linux distro, no files created.
 #
-# 4 - non-fatal error (we can continue checking
-#     AND the distro will still boot)
-#     checking for info about the block device.
-#     check /._problems[suffix] and /._distro[suffix] for info
+# 104 - non-fatal error (we can continue checking
+#       AND the distro will still boot)
+#       checking for info about the block device.
+#       check /._problems[suffix] and /._distro[suffix] for info
 #
-# 5 - non-fatal error (we can continue checking),
-#     but fatal (it will prevent the distro from booting)
-#     checking for info about the block device.
-#     check /._problems[suffix] and /._distro[suffix] for info
+# 105 - non-fatal error (we can continue checking),
+#       but fatal (it will prevent the distro from booting)
+#       checking for info about the block device.
+#       check /._problems[suffix] and /._distro[suffix] for info
 #
 
 if [ "$1" = "" ] || ! [ -b "$1" ]; then
     echo "internal error - checkBdev got invalid input for what to check" > /._problems
-    exit 2
+    exit 102
 fi
 
 if [ "$2" = "" ]; then
     echo "internal error - checkBdev got invalid input for where to store results" > /._problems
-    exit 2
+    exit 102
 fi
 
 if [ "$3" = "" ]; then
     echo "internal error - checkBdev got invalid fs type" > /._problems
-    exit 2
+    exit 102
 fi
 
 if [ "$3" = "vfat" ] || [ "$3" = "swap" ] || [ "$3" = "exfat" ] || [ "$3" = "ntfs" ]; then
     # 0 chance of being a Linux install
-    exit 3
+    exit 103
 fi
 
 haveHadProblems=false
@@ -67,7 +67,7 @@ rm -f $distro $problems $colors
 tmp=$(mktemp -p / -d tmp_checkBdev_XXXXXXXXXX)
 if ! mount "$1" "$tmp" -t "$3" -o ro; then
     prob "failed to mount"
-    exit 1
+    exit 101
 fi
 
 # is it even a Linux (or Android) distro?
@@ -77,7 +77,7 @@ if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/bin" ] || [ -L "$tmp/bin" ]; }; then
         # neither Linux nor Android, give up
         umount "$tmp"
         rmdir "$tmp"
-        exit 3
+        exit 103
     fi
 
     # it is Android!
@@ -112,11 +112,11 @@ if [ "$android" != "true" ]; then
 
         echo "Unknown" > "$distro"
         prob "no os-release file"
-        exitCode=4
+        exitCode=104
     elif [ "$ID" = "" ]; then
         echo "Unknown" > "$distro"
         prob "bad os-release file"
-        exitCode=4
+        exitCode=104
     else
         # we have ID from an os-release file!
         case $ID in
@@ -210,7 +210,7 @@ if [ "$android" != "true" ]; then
     if ! [ -f "$tmp/sbin/init" ] && ! [ -L "$tmp/sbin/init" ]; then
         # we may have multiple problems be this point, seperate by line.
         prob "/sbin/init does not exist"
-        exitCode=5
+        exitCode=105
     else
         # Resolve symlink if it exists
         if [ -L "$tmp/sbin/init" ]; then
@@ -232,22 +232,27 @@ fi
 
 if ! [ -x "$init" ]; then
     prob "/sbin/init does exist but isn't executable"
-    exitCode=5
+    exitCode=105
 fi
 
 
 # are we sure we have a PPC distro?
-if [ -f "$init" ] && ! file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null; then
-    prob '/sbin/init is not for PowerPC'
-    notPPC=true
-    exitCode=5
+if [ -f "$init" ]; then
+    file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
+    file -L "$init" | grep 'execline script text executable' > /dev/null ||
+    {
+        prob '/sbin/init is not for PowerPC'
+        notPPC=true
+        exitCode=105
+    }
 fi
+
 
 if [ "$android" != "true" ]; then
     # do we have a libc?
     if ! find -L "$tmp/lib/" -maxdepth 1 -name 'libc.s*' -quit; then
         prob 'no libc detected'
-        exitCode=5
+        exitCode=105
     fi
 fi
 
