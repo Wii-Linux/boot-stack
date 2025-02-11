@@ -241,6 +241,7 @@ fi
 if [ -f "$init" ]; then
     file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
     file -L "$init" | grep 'execline script text executable' > /dev/null ||
+    file -L "$init" | grep 'POSIX shell script, ASCII text executable' > /dev/null ||
     {
         prob '/sbin/init is not for PowerPC'
         notPPC=true
