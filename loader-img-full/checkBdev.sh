@@ -185,6 +185,14 @@ if [ "$android" != "true" ]; then
             ppcDistroColorLen="5 5"
             otherDistroColorLen="16 5"
             ;;
+        adelie)
+            ppcDistro="\e[34mAdelie PPC"
+            ppcDistroHighlighted="\e[1;34mAdelie PPC"
+            otherDistro="\e[1;31mUnknown \e[22m\e[34mAdelie"
+            otherDistroHighlighted="\e[31mUnknown \e[22m\e[34mAdelie"
+            ppcDistroColorLen="5 7"
+            otherDistroColorLen="16 16"
+            ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
     fi
