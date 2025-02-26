@@ -18,8 +18,8 @@ static void BOOT_Go() {
     BOTTOM_Destroy();
     char *bdev = items[MENU_Selected].bdevName;
     BOTTOM_Log("booting bdev %s\r\n", bdev);
-    
-    #ifdef PROD_BUILD
+
+    #if defined(PROD_BUILD) || defined(DEBUG_WII)
     int fd = open("/._bootdev", O_CREAT | O_WRONLY, 0777);
     if (fd == -1) {
         BOTTOM_Log("opening /._bootdev error: %s (%d)\r\n", strerror(errno), errno);
@@ -80,11 +80,11 @@ int main() {
     }
     strcpy(bdevs[0], "dummy0");
     strcpy(bdevsOld[0], "dummy0");
-    
+
 
     TERM_DoResize(0);
     BOTTOM_Init();
-    
+
 
     struct timeval start_time;
     gettimeofday(&start_time, NULL);
@@ -109,7 +109,7 @@ int main() {
             // compare with bdevsOld
             DEV_Compare(bdevs, bdevsOld, added, removed);
 
-            
+
             while (added[i][0] != '\0') {
                 DEV_Scan(added[i]);
                 MENU_Redraw(true, true);
