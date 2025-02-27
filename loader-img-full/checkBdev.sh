@@ -56,7 +56,6 @@ prob() {
     else
         echo "$1" > "$problems"
     fi
-    
 }
 exitCode=0
 distro=/._distro$2
@@ -111,6 +110,20 @@ if [ "$android" != "true" ]; then
         esac
         gotOSRel=true
     fi
+
+    # also, are we an old copy of Gentoo?
+    if [ -f "$tmp/etc/gentoo-release" ]; then
+        # yes!  if we have /etc/os-release too, then it's modern
+        # if not, it's old
+
+        gotOSRel=true
+        if [ -f "$tmp/etc/os-release" ]; then
+            ID="gentoo"
+        else
+            ID="old-gentoo"
+        fi
+    fi
+
     # these are not a fatal errors, but we
     # still can't know what distro it is...
     if [ "$gotOSRel" != "true" ]; then
@@ -200,6 +213,22 @@ if [ "$android" != "true" ]; then
             otherDistroHighlighted="\e[31mUnknown Chimera"
             ppcDistroColorLen="5 5"
             otherDistroColorLen="16 5"
+            ;;
+        old-gentoo)
+            ppcDistro="\e[1;35mGentoo PPC (old)"
+            ppcDistroHighlighted="\e[35mGentoo PPC (old)"
+            otherDistro="\e[1;31mUnknown \e[35mGentoo"
+            otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="12 10"
+            ;;
+        gentoo)
+            ppcDistro="\e[1;35mGentoo PPC"
+            ppcDistroHighlighted="\e[35mGentoo PPC"
+            otherDistro="\e[1;31mUnknown \e[35mGentoo"
+            otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="12 10"
             ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
