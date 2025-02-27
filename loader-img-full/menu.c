@@ -1,4 +1,15 @@
 #include "include.h"
+#include "items.h"
+#include "menu.h"
+#include "term.h"
+#include "timer.h"
+#include "bottom.h"
+
+int MENU_Selected = 0;
+int MENU_LastSelected = 0;
+bool MENU_NeedRedraw = false;
+bool MENU_NeedFullRedraw = false;
+
 static void MENU_DrawLine(int i, bool forcePad) {
     bool needPad = forcePad;
     char num[32];
@@ -47,7 +58,7 @@ static void MENU_DrawLine(int i, bool forcePad) {
 }
 
 static void MENU_FullRedraw() {
-    char *title = "Wii Linux Boot Menu v0.3.0";
+    char *title = "Wii Linux Boot Menu v0.4.0";
     int numSpc = (TERM_Width / 2) - (strlen(title) / 2);
     printf("\e[1;1H\e[2J\r\n");
     printf("\e[1;37m%*c%s\e[0m\r\n", numSpc, ' ', title);
@@ -68,7 +79,7 @@ static void MENU_PartialRedraw() {
     MENU_DrawLine(MENU_Selected, true);
 }
 
-static void MENU_Redraw(bool resize, bool full_redraw) {
+void MENU_Redraw(bool resize, bool full_redraw) {
     if (resize) {
         // TERM_DoResize(0);
     }

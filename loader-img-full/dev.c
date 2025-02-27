@@ -1,4 +1,7 @@
 #include "include.h"
+#include "args.h"
+#include "items.h"
+#include "timer.h"
 
 
 #define MAX_PROBLEMS 50000
@@ -6,7 +9,7 @@
 
 static char ___problems[MAX_PROBLEMS][MAX_PROBLEM_CHAR];
 static int  ___problemsIndex = 0;
-static void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
+void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
     DIR *dir;
     struct dirent *ent;
     struct stat st;
@@ -179,7 +182,7 @@ static void _readProblems(char *suffix) {
     }
 }
 
-static void DEV_Scan(char* block_device) {
+void DEV_Scan(char* block_device) {
     blkid_probe pr;
     int rc;
     char problems[64];
@@ -292,7 +295,7 @@ static void DEV_Scan(char* block_device) {
     }
     strncpy(items[ITEM_NumItems].fsType, fsType, sizeof(items->fsType));
     strncpy(items[ITEM_NumItems].name, distroName, sizeof(items->name));
-    
+
     blkid_free_probe(pr);
     items[ITEM_NumItems].canBoot = canBoot;
     items[ITEM_NumItems].colorName = color;
@@ -315,7 +318,7 @@ static int stringExistsInArray(const char *str, const char arr[][MAX_BDEV_CHAR],
     return false;
 }
 
-static void DEV_Compare(char bdevs[MAX_BDEV][MAX_BDEV_CHAR], char bdevsOld[MAX_BDEV][MAX_BDEV_CHAR],
+void DEV_Compare(char bdevs[MAX_BDEV][MAX_BDEV_CHAR], char bdevsOld[MAX_BDEV][MAX_BDEV_CHAR],
                         char added[MAX_BDEV][MAX_BDEV_CHAR], char removed[MAX_BDEV][MAX_BDEV_CHAR]) {
     int addedCount = 0, removedCount = 0;
 
@@ -328,7 +331,7 @@ static void DEV_Compare(char bdevs[MAX_BDEV][MAX_BDEV_CHAR], char bdevsOld[MAX_B
         fprintf(logfile, "bdevsOld[%d]=\"%s\" ", i, bdevsOld[i]);
     }
     fprintf(logfile, "\r\n");
-    
+
     memset(added, 0, MAX_BDEV * MAX_BDEV_CHAR);
     memset(removed, 0, MAX_BDEV * MAX_BDEV_CHAR);
     // Find items added

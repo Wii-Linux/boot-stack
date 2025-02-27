@@ -1,16 +1,25 @@
 #include "include.h"
+#include "bottom.h"
+#include "items.h"
+#include "menu.h"
+#include "timer.h"
+#include "term.h"
+#include "main.h"
+#include "args.h"
+#include "dev.h"
+#include "items.h"
 
-#include "timer.c"
-#include "dev.c"
+static struct termios oldt;
+bool ARGS_IsPPCDroid;
+int MAIN_LoopIters = 0;
+#if defined(DEBUG_WII) || defined(DEBUG_PC)
+FILE *logfile;
+#endif
 
 static void doCleanup() {
     printf("\e[?25h");
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
-
-#include "bottom.c"
-#include "term.c"
-
 
 static void BOOT_Go() {
     doCleanup();
@@ -44,7 +53,6 @@ static void BOOT_Go() {
 
     exit(0);
 }
-#include "menu.c"
 
 int main() {
     char bdevs   [MAX_BDEV][MAX_BDEV_CHAR];
@@ -69,7 +77,13 @@ int main() {
 
     TERM_Init(&oldt);
 
+    #if defined(DEBUG_WII) || defined(DEBUG_PC)
     logfile = fopen("log.txt", "w+");
+    if (logfile == NULL) {
+		fprintf(stderr, "Couldn't open logfile: %s\r\n", strerror(errno));
+		exit(1);
+	}
+    #endif
 
 
     for (int i = 0; i != MAX_BDEV; i++) {
@@ -93,9 +107,9 @@ int main() {
 
     while (true) {
         MAIN_LoopIters++;
-	if (!TIMER_Paused) {
-            TIMER_TicksRemaining--;
-	}
+		if (!TIMER_Paused) {
+			TIMER_TicksRemaining--;
+		}
 
         if (MAIN_LoopIters % 15 == 0 || MAIN_LoopIters == 1) {
             int i = 0;
