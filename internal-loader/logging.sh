@@ -9,6 +9,7 @@ warn() {
 
 error() {
     echo -e "\x1b[1;31mERROR!! $1\x1b[0m"
+    echo "<1>ERROR!! $1" > /dev/kmsg
 }
 
 success() {

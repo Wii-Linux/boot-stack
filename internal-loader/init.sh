@@ -35,6 +35,10 @@ if ! [ -c /dev/tty0 ]; then
     mknod /dev/null    c 1 3
 fi
 
+if ! [ -c /dev/kmsg ]; then
+    mknod /dev/kmsg    c 1 11
+fi
+
 exec > /dev/console 2> /dev/console
 
 echo -en "\033[6;1H\033[J"
