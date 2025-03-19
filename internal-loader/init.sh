@@ -125,6 +125,8 @@ case $(cat /proc/version) in
     "Linux version 4.6"*) ver=v4_6_0;;
     "Linux version 4.9.337"*) ver=v4_9_337;;
     "Linux version 4.9"*) ver=v4_9_0;;
+    "Linux version 4.14.336"*) ver=v4_14336;;
+    "Linux version 4.14"*) ver=v4_14_0;;
     "Linux version 4.20"*) ver=v4_20_0;;
     "Linux version 6.6"*) ver=v6_6_0;;
     *) error "Unknown kernel version, Techflash messed up!"; support ;;
