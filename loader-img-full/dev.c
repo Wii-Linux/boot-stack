@@ -57,7 +57,7 @@ void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
 
 
 static void addProblem(char *str);
-static bool _readDistro(char *suffix, char *distroName, char *distroNameHighlighted, char *problems, int *colorLen, int *colorLenHighlighted, bool *isAndroid) {
+static bool _readDistro(char *suffix, char *distroName, char *distroNameHighlighted, char *problems, int *colorLen, int *colorLenHighlighted, bool *isAndroid, bool *isBatocera) {
     char str[256];
     int fd;
     bool ret = false;
@@ -129,6 +129,16 @@ static bool _readDistro(char *suffix, char *distroName, char *distroNameHighligh
     close(fd);
     remove(str);
 
+    // check if distro is Batocera
+    snprintf(str, sizeof(str), "/._batocera%s", suffix);
+    fd = open(str, O_RDONLY);
+
+    // fd == -1, file doesn't exist, not batocera
+    // fd != -1, file exists (valid fd), is batocera
+    *isBatocera = (fd != -1);
+    close(fd);
+    remove(str);
+
     if (fd == -1 && ARGS_IsPPCDroid) {
         addProblem("Linux distro on PPCDroid kernel");
         return false;
@@ -195,6 +205,7 @@ void DEV_Scan(char* block_device) {
     bool color = false;
     bool paused = TIMER_Paused;
     bool android = false;
+    bool batocera = false;
 
     fprintf(logfile, "DEV_Scan(): scan initiated for \"%s\"\r\n", block_device);
 
@@ -244,7 +255,7 @@ void DEV_Scan(char* block_device) {
             case 0:
                 // ._problems[suffix] may exist, and ._distro[suffix] will
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android, &batocera);
                 break;
             case 101:
                 // fatal error checking bdev, ._problems[suffix] will exist, ._distro[name] will not
@@ -266,12 +277,12 @@ void DEV_Scan(char* block_device) {
             case 104:
                 // non-fatal error, checking continued, distro will boot
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android, &batocera);
                 break;
             case 105:
                 // distro will not boot, but did not stop it from continuing to check
                 _readProblems(suffix);
-                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android);
+                color = _readDistro(suffix, distroName, distroNameHighlighted, problems, &colorLen, &colorLenHighlighted, &android, &batocera);
                 canBoot = false;
                 break;
             default:
@@ -302,6 +313,7 @@ void DEV_Scan(char* block_device) {
     items[ITEM_NumItems].colorLen = colorLen;
     items[ITEM_NumItems].colorLenHighlighted = colorLenHighlighted;
     items[ITEM_NumItems].android = android;
+    items[ITEM_NumItems].batocera = batocera;
     ITEM_NumItems++;
 
     if (!paused) TIMER_Resume();

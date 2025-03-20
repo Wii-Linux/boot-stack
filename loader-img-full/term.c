@@ -6,6 +6,8 @@
 int TERM_Width;
 int TERM_Height;
 
+extern void doCleanup();
+
 void TERM_DoResize(int dummy) {
     (void)dummy;
     struct winsize w;
@@ -18,7 +20,7 @@ void TERM_DoResize(int dummy) {
 }
 
 
-#ifndef PROD_BUILD
+#if !defined(PROD_BUILD) && !defined(DEBUG_WII)
 static void cleanupAndExit(int dummy) {
     (void)dummy;
     doCleanup();
@@ -41,7 +43,7 @@ void TERM_Init(struct termios *oldt) {
     signal(SIGWINCH, TERM_DoResize);
 
     // so we can restore the terminal
-    #ifndef PROD_BUILD
+    #if !defined(PROD_BUILD) && !defined(DEBUG_WII)
     signal(SIGINT, cleanupAndExit);
     #else
     signal(SIGINT, dummySignalHandler);

@@ -16,7 +16,7 @@ int MAIN_LoopIters = 0;
 FILE *logfile;
 #endif
 
-static void doCleanup() {
+void doCleanup() {
     printf("\e[?25h");
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
@@ -48,6 +48,18 @@ static void BOOT_Go() {
 	    write(fd, "true", 4);
 	    close(fd);
 	    BOTTOM_Log("Wrote /._isAndroid to tell init that this is Android\r\n");
+    }
+
+    if (items[MENU_Selected].batocera) {
+	    fd = open("/._isBatocera", O_CREAT | O_WRONLY, 0777);
+	    if (fd == -1) {
+		    BOTTOM_Log("openning /._isBatocera error: %s (%d)\r\n", strerror(errno), errno);
+		    exit(1);
+	    }
+
+	    write(fd, "true", 4);
+	    close(fd);
+	    BOTTOM_Log("Wrote /._isBatocera to tell init that this is Batocera\r\n");
     }
     #endif
 
@@ -211,7 +223,7 @@ int main() {
         }
     }
 
-    #ifndef PROD_BUILD
+    #if !defined(PROD_BUILD) && !defined(DEBUG_WII)
     cleanupAndExit(0);
     #endif
     return 0;

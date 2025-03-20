@@ -3,7 +3,7 @@
 
 #define MAX_ITEMS     24
 #define MAX_BDEV      64
-#define MAX_BDEV_CHAR 16
+#define MAX_BDEV_CHAR 24
 
 typedef struct {
     char name[32];
@@ -14,6 +14,7 @@ typedef struct {
     bool canBoot;
     bool colorName;
     bool android;
+    bool batocera;
     int colorLen;
     int colorLenHighlighted;
 } Item;

@@ -72,18 +72,29 @@ fi
 # is it even a Linux (or Android) distro?
 if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/bin" ] || [ -L "$tmp/bin" ]; }; then
     # not Normal Linux.... is it Android?
-    if ! [ -d "$tmp/system" ] || ! [ -d "$tmp/system/bin" ] || ! [ -d "$tmp/system/usr" ]; then
+    if [ -d "$tmp/system" ] && [ -d "$tmp/system/bin" ] && [ -d "$tmp/system/usr" ]; then
+        # it is Android!
+        android=true
+    # neither normal Linux, nor Android.... Batocera?
+    elif [ -f "$tmp/boot/batocera" ]; then
+        # yes!
+        batoceraSquashfs=true
+
+        # set up vars because none of the other distro detection can handle this
+        notPPC=false
+        ppcDistro="\e[33mBatocera"
+        ppcDistroHighlighted="\e[31mBatocera"
+        ppcDistroColorLen="5 5"
+   else
         # neither Linux nor Android, give up
         umount "$tmp"
         rmdir "$tmp"
         exit 103
     fi
 
-    # it is Android!
-    android=true
 fi
 
-if [ "$android" != "true" ]; then
+if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     for f in etc/os-release usr/lib/os-release usr/share/os-release; do
         if [ -f "$tmp/$f" ] && . "$tmp/$f"; then
             # we found one!
@@ -230,10 +241,31 @@ if [ "$android" != "true" ]; then
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
+        buildroot)
+            # check the name
+            case "$NAME" in
+                Batocera.linux)
+                    ppcDistro="\e[33mBatocera"
+                    ppcDistroHighlighted="\e[31mBatocera"
+                    otherDistro="\e[1;31mUnknown \e[33mBatocera"
+                    otherDistroHighlighted="\e[31mUnknown Batocera"
+                    ppcDistroColorLen="5 5"
+                    otherDistroColorLen="12 10"
+                    ;;
+                *)
+                    ppcDistro="\e[1;32mBuildroot PPC"
+                    ppcDistroHighlighted="\e[32mBuildroot PPC"
+                    otherDistro="\e[1;31mUnknown \e[32mBuildroot"
+                    otherDistroHighlighted="\e[31mUnknown Buildroot"
+                    ppcDistroColorLen="7 5"
+                    otherDistroColorLen="12 10"
+                    ;;
+            esac
+            ;;
         *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
     fi
-else
+elif [ "$batoceraSquashfs" != "true" ]; then
     ppcDistro="\e[1;32mPPCDroid"
     ppcDistroHighlighted="\e[32mPPCDroid"
     otherDistro="\e[1;31mUnknown \e[32mAndroid"
@@ -244,7 +276,7 @@ fi
 
 
 # do we have /sbin/init (or /init if Android)?
-if [ "$android" != "true" ]; then
+if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     if ! [ -f "$tmp/sbin/init" ] && ! [ -L "$tmp/sbin/init" ]; then
         # we may have multiple problems be this point, seperate by line.
         prob "/sbin/init does not exist"
@@ -268,14 +300,14 @@ else
     init="$tmp/init"
 fi
 
-if ! [ -x "$init" ]; then
+if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     prob "/sbin/init does exist but isn't executable"
     exitCode=105
 fi
 
 
 # are we sure we have a PPC distro?
-if [ -f "$init" ]; then
+if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
     file -L "$init" | grep 'execline script text executable' > /dev/null ||
     file -L "$init" | grep 'POSIX shell script, ASCII text executable' > /dev/null ||
@@ -287,7 +319,7 @@ if [ -f "$init" ]; then
 fi
 
 
-if [ "$android" != "true" ]; then
+if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # do we have a libc?
     if ! find -L "$tmp/lib/" -maxdepth 1 -name 'libc.s*' -quit; then
         prob 'no libc detected'
@@ -313,5 +345,9 @@ fi
 
 if [ "$android" = "true" ]; then
     touch /._android$2
+fi
+
+if [ "$batoceraSquashfs" = "true" ]; then
+   touch /._batocera$2
 fi
 exit $exitCode

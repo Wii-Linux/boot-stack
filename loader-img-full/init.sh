@@ -149,12 +149,37 @@ if [ "$bdev" = "" ]; then
 fi
 
 android=$(cat /._isAndroid 2>/dev/null)
+batocera=$(cat /._isBatocera 2>/dev/null)
 
 echo "mounting $bdev"
-if ! mount "$bdev" /target; then
-	error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
-	support
+
+# wait!  are we batocera?  if so, we need to mount the squashfs
+if [ "$batocera" = "true" ]; then
+	echo "mounting batocera squashfs"
+	mkdir /target_tmp
+	mount -o ro "$bdev" /target_tmp
+	if [ $? != 0 ]; then
+		error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
+		support
+	fi
+
+	mount /target_tmp/boot/batocera /target
+	if [ $? != 0 ]; then
+		error "failed to mount /target_tmp/boot/batocera to boot it, corrupted fs?  check for errors above"
+		support
+	fi
+
+	# can't unmount /target_tmp, it's in use
+	# so move it inside the new rootfs so it doesn't get hosed
+	mount -n -o move /target_tmp /target/boot/
+	rmdir /target_tmp
+else
+	if ! mount "$bdev" /target; then
+		error "failed to mount $bdev to boot it, corrupted fs?  check for errors above"
+		support
+	fi
 fi
+
 #if ! [ -x /target/sbin/init ]; then
 #	error "/sbin/init isn't executable / doesn't exist in your distro..."
 #	error "Cannot possibly continue booting."
@@ -164,7 +189,7 @@ fi
 echo "fixing up filesystems"
 mount -t tmpfs none /
 
-if [ "$android" != "true" ]; then
+if [ "$android" != "true" ] && [ "$batocera" != "true" ]; then
 	if [ "$ppcdroid_only" = "true" ]; then
 		error "Trying to boot a Linux distro on an Android kernel!!!"
 		error "This WILL backfire horribly, but letting you try anyways..."
