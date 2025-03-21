@@ -127,9 +127,6 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
 
     # also... are we an old copy of Fedora?
     if [ -f "$tmp/etc/fedora-release" ]; then
-        # assume always the same color len
-        ppcDistroColorLen="7 5"
-        otherDistroColorLen="7 5"
         ID="fedora"
 
         # trim out ' release' to make it fit nicer on screen
@@ -142,6 +139,23 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         otherDistroColorLen="16 16"
         gotOSRel=true
     fi
+
+    # also... are we an old copy of Yellow Dog?
+        if [ -f "$tmp/etc/yellowdog-release" ]; then
+            # assume always the same color len
+            ppcDistroColorLen="7 7"
+            otherDistroColorLen="12 14"
+            ID="yellow-dog"
+
+            # trim out ' Linux release' to make it fit nicer on screen
+            NAME="$(cat "$tmp/etc/yellowdog-release" | sed "s/ Linux release//")"
+            ppcDistro="\e[1;33m$NAME PPC"
+            ppcDistroHighlighted="\e[1;33m$NAME PPC"
+            otherDistro="\e[1;31mUnknown \e[33m$NAME"
+            otherDistroHighlighted="\e[31mUnknown \e[1m\e[33m$NAME"
+            gotOSRel=true
+        fi
+
     # also, are we an old copy of Gentoo?
     if [ -f "$tmp/etc/gentoo-release" ]; then
         # yes!  if we have /etc/os-release too, then it's modern
@@ -175,7 +189,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     else
         # we have ID from an os-release file!
         case $ID in
-        debian|fedora|gentoo)
+        debian|fedora|gentoo|yellow-dog)
             # handled already above
             ;;
         arch)
