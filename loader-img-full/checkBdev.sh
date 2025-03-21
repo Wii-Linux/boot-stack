@@ -43,7 +43,7 @@ if [ "$3" = "" ]; then
     exit 102
 fi
 
-if [ "$3" = "vfat" ] || [ "$3" = "swap" ] || [ "$3" = "exfat" ] || [ "$3" = "ntfs" ]; then
+if [ "$3" = "vfat" ] || [ "$3" = "swap" ] || [ "$3" = "exfat" ] || [ "$3" = "ntfs" ] || [ "$3" = "ufs" ]; then
     # 0 chance of being a Linux install
     exit 103
 fi
