@@ -38,15 +38,14 @@ if [ "$2" = "" ]; then
     exit 102
 fi
 
-if [ "$3" = "" ]; then
-    echo "internal error - checkBdev got invalid fs type" > /._problems
-    exit 102
-fi
-
-if [ "$3" = "vfat" ] || [ "$3" = "swap" ] || [ "$3" = "exfat" ] || [ "$3" = "ntfs" ] || [ "$3" = "ufs" ]; then
-    # 0 chance of being a Linux install
-    exit 103
-fi
+case "$3" in
+    "")
+        echo "internal error - checkBdev got invalid fs type" > /._problems
+        exit 102 ;;
+    vfat|swap|exfat|ntfs|ufs)
+        # 0 chance of being a Linux install
+        exit 103 ;;
+esac
 
 haveHadProblems=false
 prob() {
@@ -91,7 +90,6 @@ if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/bin" ] || [ -L "$tmp/bin" ]; }; then
         rmdir "$tmp"
         exit 103
     fi
-
 fi
 
 if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
@@ -107,19 +105,23 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # we can give more info if so.
     if [ -f "$tmp/etc/debian_version" ]; then
         # yes!  but which...
+        ID="debian"
+        case "$(cat "$tmp/etc/debian_version")" in
+            4.*) NAME="Debian 4 (etch)" ;;
+            5.*) NAME="Debian 5 (lenny)" ;;
+            8.*) NAME="Debian 8 (jessie)" ;;
+            12.*) NAME="Debian-Ports 12 (bookworm)" ;;
+            13.*) NAME="Debian-Ports 13 (trixie)" ;;
+            *) NAME="Debian $(cat "$tmp/etc/debian_version")" ;;
+        esac
 
-        # assume always the same color len
+        otherNAME="$(echo $NAME | sed "s/-Ports//")"
+        ppcDistro="\e[1;31m$NAME PPC"
+        ppcDistroHighlighted="\e[31m$NAME PPC"
+        otherDistro="\e[1;31mUnknown $otherNAME"
+        otherDistroHighlighted="\e[31mUnknown $otherNAME"
         ppcDistroColorLen="7 5"
         otherDistroColorLen="7 5"
-
-        case "$(cat "$tmp/etc/debian_version")" in
-            4.*) ID="debian-etch" ;;
-            5.*) ID="debian-lenny" ;;
-            8.*) ID="debian-jessie" ;;
-            12.*) ID="debian-bookworm" ;;
-            13.*) ID="debian-trixie" ;;
-            *) ID="debian" ;;
-        esac
         gotOSRel=true
     fi
 
@@ -146,10 +148,17 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         # if not, it's old
 
         gotOSRel=true
-        if [ -f "$tmp/etc/os-release" ]; then
-            ID="gentoo"
-        else
-            ID="old-gentoo"
+        ID="gentoo"
+
+        ppcDistro="\e[1;35mGentoo PPC"
+        ppcDistroHighlighted="\e[35mGentoo PPC"
+        otherDistro="\e[1;31mUnknown \e[35mGentoo"
+        otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
+        ppcDistroColorLen="7 5"
+        otherDistroColorLen="12 10"
+        if ! [ -f "$tmp/etc/os-release" ]; then
+            ppcDistro="$ppcDistro (old)"
+            ppcDistroHighlighted="$ppcDistroHighlighted (old)"
         fi
     fi
 
@@ -166,6 +175,9 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     else
         # we have ID from an os-release file!
         case $ID in
+        debian|fedora|gentoo)
+            # handled already above
+            ;;
         arch)
             ppcDistro="\e[1;36mArchPOWER"
             ppcDistroHighlighted="\e[36mArchPOWER"
@@ -173,42 +185,6 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroHighlighted="\e[31mUnknown \e[36mArch Linux"
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
-            ;;
-        debian-trixie)
-            ppcDistro="\e[1;31mDebian-Ports 13 (trixie) PPC"
-            ppcDistroHighlighted="\e[31mDebian-Ports 13 (trixie) PPC"
-            otherDistro="\e[1;31mUnknown Debian 13 (trixie)"
-            otherDistroHighlighted="\e[31mUnknown Debian 13 (trixie)"
-            ;;
-        debian-bookworm)
-            ppcDistro="\e[1;31mDebian-Ports 12 (bookworm) PPC"
-            ppcDistroHighlighted="\e[31mDebian-Ports 12 (bookworm) PPC"
-            otherDistro="\e[1;31mUnknown Debian 12 (bookworm)"
-            otherDistroHighlighted="\e[31mUnknown Debian 12 (bookworm)"
-            ;;
-        debian-jessie)
-            ppcDistro="\e[1;31mDebian 8 (jessie) PPC"
-            ppcDistroHighlighted="\e[31mDebian 8 (jessie) PPC"
-            otherDistro="\e[1;31mUnknown Debian 8 (jessie)"
-            otherDistroHighlighted="\e[31mUnknown Debian 8 (jessie)"
-            ;;
-        debian-lenny)
-            ppcDistro="\e[1;31mDebian 5 (lenny) PPC"
-            ppcDistroHighlighted="\e[31mDebian 5 (lenny) PPC"
-            otherDistro="\e[1;31mUnknown Debian 5 (lenny)"
-            otherDistroHighlighted="\e[31mUnknown Debian 5 (lenny)"
-            ;;
-        debian-etch)
-            ppcDistro="\e[1;31mDebian 4 (etch) PPC"
-            ppcDistroHighlighted="\e[31mDebian 4 (etch) PPC"
-            otherDistro="\e[1;31mUnknown Debian 4 (etch)"
-            otherDistroHighlighted="\e[31mUnknown Debian 4 (etch)"
-            ;;
-        debian)
-            ppcDistro="\e[1;31mDebian PPC (Unknown version)"
-            ppcDistroHighlighted="\e[31mDebian PPC (Unknown version)"
-            otherDistro="\e[1;31mUnknown Debian"
-            otherDistroHighlighted="\e[31mUnknown Debian"
             ;;
         void)
             ppcDistro="\e[1;32mVoid PPC"
@@ -242,22 +218,6 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             ppcDistroColorLen="5 5"
             otherDistroColorLen="16 5"
             ;;
-        old-gentoo)
-            ppcDistro="\e[1;35mGentoo PPC (old)"
-            ppcDistroHighlighted="\e[35mGentoo PPC (old)"
-            otherDistro="\e[1;31mUnknown \e[35mGentoo"
-            otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
-            ppcDistroColorLen="7 5"
-            otherDistroColorLen="12 10"
-            ;;
-        gentoo)
-            ppcDistro="\e[1;35mGentoo PPC"
-            ppcDistroHighlighted="\e[35mGentoo PPC"
-            otherDistro="\e[1;31mUnknown \e[35mGentoo"
-            otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
-            ppcDistroColorLen="7 5"
-            otherDistroColorLen="12 10"
-            ;;
         buildroot)
             # check the name
             case "$NAME" in
@@ -279,10 +239,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
                     ;;
             esac
             ;;
-        fedora)
-            # ignore, we filled it out before
-            ;;
-	    *) ppcDistro="Unknown"; otherDistro="Unknown";;
+        *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
     fi
 elif [ "$batoceraSquashfs" != "true" ]; then
@@ -302,19 +259,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         prob "/sbin/init does not exist"
         exitCode=105
     else
-        # Resolve symlink if it exists
-        if [ -L "$tmp/sbin/init" ]; then
-            link="$(readlink $tmp/sbin/init)"
-            if [ "${link#/}" != "$link" ]; then
-                # absolute symlink
-                init="${tmp}${link}"
-            else
-                init="${tmp}/sbin/${link}"
-            fi
-        else
-            # regular file
-            init="${tmp}/sbin/init"
-        fi
+        init="$(realpath $tmp/sbin/init)"
     fi
 else
     init="$tmp/init"
@@ -328,10 +273,10 @@ fi
 
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
-    file -L "$init" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
-    file -L "$init" | grep 'execline script text executable' > /dev/null ||
-    file -L "$init" | grep 'POSIX shell script, ASCII text executable' > /dev/null ||
-    {
+    out=$(file -L "$init")
+    echo "$out" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
+    echo "$out" | grep 'execline script text executable' > /dev/null ||
+    echo "$out" | grep 'POSIX shell script, ASCII text executable' > /dev/null || {
         prob '/sbin/init is not for PowerPC'
         notPPC=true
         exitCode=105
@@ -363,11 +308,7 @@ else
     printf "$ppcDistroColorLen" > "$colors"
 fi
 
-if [ "$android" = "true" ]; then
-    touch /._android$2
-fi
+[ "$android" = "true" ] && touch /._android$2
+[ "$batoceraSquashfs" = "true" ] && touch /._batocera$2
 
-if [ "$batoceraSquashfs" = "true" ]; then
-   touch /._batocera$2
-fi
 exit $exitCode
