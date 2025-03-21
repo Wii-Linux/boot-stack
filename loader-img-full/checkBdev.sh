@@ -102,6 +102,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             break
         fi
     done
+
     # just in case... are we an old copy of Debian?
     # we can give more info if so.
     if [ -f "$tmp/etc/debian_version" ]; then
@@ -122,6 +123,23 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         gotOSRel=true
     fi
 
+    # also... are we an old copy of Fedora?
+    if [ -f "$tmp/etc/fedora-release" ]; then
+        # assume always the same color len
+        ppcDistroColorLen="7 5"
+        otherDistroColorLen="7 5"
+        ID="fedora"
+
+        # trim out ' release' to make it fit nicer on screen
+        NAME="$(cat "$tmp/etc/fedora-release" | sed "s/ release//")"
+        ppcDistro="\e[34m$NAME PPC"
+        ppcDistroHighlighted="\e[1;34m$NAME PPC"
+        otherDistro="\e[1;31mUnknown \e[22m\e[34m$NAME"
+        otherDistroHighlighted="\e[31mUnknown \e[22m\e[34m$NAME"
+        ppcDistroColorLen="5 7"
+        otherDistroColorLen="16 16"
+        gotOSRel=true
+    fi
     # also, are we an old copy of Gentoo?
     if [ -f "$tmp/etc/gentoo-release" ]; then
         # yes!  if we have /etc/os-release too, then it's modern
@@ -138,7 +156,6 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # these are not a fatal errors, but we
     # still can't know what distro it is...
     if [ "$gotOSRel" != "true" ]; then
-
         echo "Unknown" > "$distro"
         prob "no os-release file"
         exitCode=104
@@ -262,7 +279,10 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
                     ;;
             esac
             ;;
-        *) ppcDistro="Unknown"; otherDistro="Unknown";;
+        fedora)
+            # ignore, we filled it out before
+            ;;
+	    *) ppcDistro="Unknown"; otherDistro="Unknown";;
         esac
     fi
 elif [ "$batoceraSquashfs" != "true" ]; then

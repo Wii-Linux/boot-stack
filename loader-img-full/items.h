@@ -2,13 +2,14 @@
 #define ITEMS_H
 #include <stdbool.h>
 
+#define MAX_ITEM_NAME_LEN 64
 #define MAX_ITEMS     24
 #define MAX_BDEV      64
 #define MAX_BDEV_CHAR 24
 
 typedef struct {
-    char name[32];
-    char nameHighlighted[32];
+    char name[MAX_ITEM_NAME_LEN];
+    char nameHighlighted[MAX_ITEM_NAME_LEN];
     char bdevName[MAX_BDEV_CHAR];
     char problems[256];
     char fsType[8];
