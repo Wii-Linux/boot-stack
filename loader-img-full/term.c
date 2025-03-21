@@ -1,12 +1,10 @@
 #include "include.h"
-#include "items.h"
 #include "term.h"
 #include "menu.h"
+#include "cleanup.h"
 
 int TERM_Width;
 int TERM_Height;
-
-extern void doCleanup();
 
 void TERM_DoResize(int dummy) {
     (void)dummy;
@@ -21,7 +19,7 @@ void TERM_DoResize(int dummy) {
 
 
 #if !defined(PROD_BUILD) && !defined(DEBUG_WII)
-static void cleanupAndExit(int dummy) {
+void cleanupAndExit(int dummy) {
     (void)dummy;
     doCleanup();
     exit(0);

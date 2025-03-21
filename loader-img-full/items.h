@@ -1,5 +1,6 @@
 #ifndef ITEMS_H
 #define ITEMS_H
+#include <stdbool.h>
 
 #define MAX_ITEMS     24
 #define MAX_BDEV      64
