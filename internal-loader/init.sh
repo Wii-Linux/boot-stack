@@ -4,23 +4,6 @@
 
 
 # Wii Linux Initrd Loader init script
-#
-# XXX: Contains garbage hacks to be able to load the installer despite
-# several kernel bugs making that theoretically impossible.  They need to be
-# worked around in incredibly unconventional and annoying ways.
-#
-# They're marked with "XXX: installer hack #[number]"
-#
-# The most egregious of which being the following 2:
-#   - Load the entire thing, uncompressed, via FAT32.
-#     Copying from a squashfs just doesn't work due to kernel bugs.
-#     The issue lies in the SD Card driver, not an issue with sqfs itself.
-#     It's something about waiting on buffers, that just never get filled iirc
-#
-#   - Since FAT32 doesn't have permissions support, generate, at build time, a
-#     script to apply the correct permissions.  Copy to RAM, and apply them
-#     at runtime (via jit_loader.sh), in RAM, where we can have permissions.
-
 
 mount -t devtmpfs dev /dev
 mount -t sysfs sys /sys
@@ -117,8 +100,6 @@ parts=$(ls "/dev/$card"*)
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
-    "Linux version 2.6"*) ver=installer ;;
-    "Linux version 3.15.10"*) ver=installer ;;
     "Linux version 4.4.302-cip80-wii-ios"*) ver=v4_4_302;;
     "Linux version 4.5.0-wii-ppcdroid"*) ver=v4_5_0a;;
     "Linux version 4.5"*) ver=v4_5_0;;
@@ -163,8 +144,7 @@ if [ "$boot_part" = "" ]; then
         fi
         echo "Trying partition $part..."
 
-        # XXX: Installer hack #1 - check for raw dir in case of installer
-        if mount "$part" /boot_part -t vfat -o ro && { [ -f "/boot_part/wiilinux/$ver.ldr" ] || [ -d "/boot_part/wiilinux/$ver" ]; }; then
+        if mount "$part" /boot_part -t vfat -o ro && [ -f "/boot_part/wiilinux/$ver.ldr" ]; then
             boot_part=$part
             break
         fi
@@ -178,47 +158,28 @@ if [ "$boot_part" = "" ]; then
     support
 fi
 
-# XXX: Installer hack #2 - skip mounting if installer
-if [ "$ver" = "installer" ]; then
-	mount --bind /boot_part/wiilinux/installer /target
-else
-	name=/boot_part/wiilinux/$ver.ldr
-	fname=$ver.ldr
+name=/boot_part/wiilinux/$ver.ldr
+fname=$ver.ldr
 
-	success "Found $boot_part with $fname!  Pivoting..."
-	echo "mounting squashfs" > /dev/kmsg
-	if ! mount "$name" /target -t squashfs -o ro; then
-	    error "Uh oh, found $fname, but failed to mount it...."
-	    echo "This is likely the result of an interrupted update mangling it beyond usability."
-	    umount /boot_part
-	    support
-	fi
+success "Found $boot_part with $fname!  Pivoting..."
+echo "mounting squashfs" > /dev/kmsg
+if ! mount "$name" /target -t squashfs -o ro; then
+    error "Uh oh, found $fname, but failed to mount it...."
+    echo "This is likely the result of an interrupted update mangling it beyond usability."
+    umount /boot_part
+    support
 fi
-
-# XXX: Installer hack #3 - since we can't have symlinks on FAT32, /sbin/init,
-# actually won't exist yet, so this check will always fail.
-# It'll be generated below when we run jit_setup.sh, which will relocate
-# everything to a tmpfs and create all symlinks and perms at runtime,
-# however, at this point, /sbin/init just won't exist.
-
-if [ "$ver" != "installer" ]; then
-	echo "checking /sbin/init" > /dev/kmsg
-	if ! [ -x /target/sbin/init ]; then
-	    error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
-	    error "exist there, or isn't executable!"
-	    echo "This is likely the result of an interrupted update mangling it beyond usability."
-	    echo "Please include the following debug info:"
-	    ls -l /target/sbin/init
-	    ls -l /target/linuxrc
-	    umount /target
-	    umount /boot_part
-	    support
-	fi
-fi
-
-# XXX: Installer hack #4 - we can't rely on overlayfs to exist.  Manually mount /run.
-if [ "$ver" = "installer" ]; then
-	mount -n -o move /run /target/run
+echo "checking /sbin/init" > /dev/kmsg
+if ! [ -x /target/sbin/init ]; then
+    error "Uh oh, found and mounted $fname, but /sbin/init either doesn't"
+    error "exist there, or isn't executable!"
+    echo "This is likely the result of an interrupted update mangling it beyond usability."
+    echo "Please include the following debug info:"
+    ls -l /target/sbin/init
+    ls -l /target/linuxrc
+    umount /target
+    umount /boot_part
+    support
 fi
 
 echo "running jit setup" > /dev/kmsg
@@ -234,14 +195,12 @@ if [ $err != 0 ]; then
     support
 fi
 
-if [ "$ver" != "installer" ]; then
-	echo "making dir" > /dev/kmsg
-	mkdir /target/run/boot_part
-	echo "moving mount" > /dev/kmsg
-	if ! mount -n -o move /boot_part /target/run/boot_part && umount /boot_part && rmdir /boot_part; then
-	    error "failed to move /boot_part"
-	    support
-	fi
+echo "making dir" > /dev/kmsg
+mkdir /target/run/boot_part
+echo "moving mount" > /dev/kmsg
+if ! mount -n -o move /boot_part /target/run/boot_part && umount /boot_part && rmdir /boot_part; then
+    error "failed to move /boot_part"
+    support
 fi
 
 echo "about to exec" > /dev/kmsg
