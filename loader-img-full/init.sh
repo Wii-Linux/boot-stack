@@ -16,7 +16,7 @@ fi
 exec < /dev/console > /dev/console 2> /dev/console
 
 reset
-echo "Wii Linux loader.img init v0.5.0"
+echo "Wii Linux loader.img init v0.5.1"
 
 cat /proc/sys/kernel/printk > /._printk_restore
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
