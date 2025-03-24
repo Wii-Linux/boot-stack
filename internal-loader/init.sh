@@ -29,12 +29,6 @@ echo "Wii Linux Initrd Loader v0.2.2"
 
 echo "initrd starting" > /dev/kmsg
 . /logging.sh
-
-if cat /proc/version | grep -q '\-wii-ios'; then
-	is_ios_kernel=true
-	warn "Running on experimental IOS kernel!  Beware of bugs!"
-fi
-
 . /support.sh
 
 # global variables
@@ -100,7 +94,6 @@ parts=$(ls "/dev/$card"*)
 mkdir /boot_part /target -p
 
 case $(cat /proc/version) in
-    "Linux version 4.4.302-cip80-wii-ios"*) ver=v4_4_302;;
     "Linux version 4.5.0-wii-ppcdroid"*) ver=v4_5_0a;;
     "Linux version 4.5"*) ver=v4_5_0;;
     "Linux version 4.6"*) ver=v4_6_0;;
@@ -115,10 +108,6 @@ case $(cat /proc/version) in
     "Linux version 6.6"*) ver=v6_6_0;;
     *) error "Unknown kernel version, Techflash messed up!"; support ;;
 esac
-
-if [ "$is_ios_kernel" = "true" ] && [ "${#ver}" -lt "8" ]; then
-	ver="${ver}i"
-fi
 
 if [ "$auto_boot_partition" != "" ] && ! [ -b "$auto_boot_partition" ]; then
     warn "Specified auto_boot_partition does not exist!  Fix your boot config!!"
