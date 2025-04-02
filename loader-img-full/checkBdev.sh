@@ -85,7 +85,7 @@ if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/lib" ] || [ -L "$tmp/lib" ]; }; then
         ppcDistroHighlighted="\e[31mBatocera"
         ppcDistroColorLen="5 5"
    else
-        # neither Linux nor Android, give up
+        # neither Linux nor Android nor Batocera, give up
         umount "$tmp"
         rmdir "$tmp"
         exit 103
@@ -105,7 +105,6 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # we can give more info if so.
     if [ -f "$tmp/etc/debian_version" ]; then
         # yes!  but which...
-        ID="debian"
         case "$(cat "$tmp/etc/debian_version")" in
             4.*) NAME="Debian 4 (etch)" ;;
             5.*) NAME="Debian 5 (lenny)" ;;
@@ -122,13 +121,10 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         otherDistroHighlighted="\e[31mUnknown $otherNAME"
         ppcDistroColorLen="7 5"
         otherDistroColorLen="7 5"
-        gotOSRel=true
     fi
 
     # also... are we an old copy of Fedora?
     if [ -f "$tmp/etc/fedora-release" ]; then
-        ID="fedora"
-
         # trim out ' release' to make it fit nicer on screen
         NAME="$(cat "$tmp/etc/fedora-release" | sed "s/ release//")"
         ppcDistro="\e[34m$NAME PPC"
@@ -137,33 +133,26 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         otherDistroHighlighted="\e[31mUnknown \e[22m\e[34m$NAME"
         ppcDistroColorLen="5 7"
         otherDistroColorLen="16 16"
-        gotOSRel=true
     fi
 
     # also... are we an old copy of Yellow Dog?
-        if [ -f "$tmp/etc/yellowdog-release" ]; then
-            # assume always the same color len
-            ppcDistroColorLen="7 7"
-            otherDistroColorLen="12 14"
-            ID="yellow-dog"
+    if [ -f "$tmp/etc/yellowdog-release" ]; then
+        # assume always the same color len
+        ppcDistroColorLen="7 7"
+        otherDistroColorLen="12 14"
 
-            # trim out ' Linux release' to make it fit nicer on screen
-            NAME="$(cat "$tmp/etc/yellowdog-release" | sed "s/ Linux release//")"
-            ppcDistro="\e[1;33m$NAME PPC"
-            ppcDistroHighlighted="\e[1;33m$NAME PPC"
-            otherDistro="\e[1;31mUnknown \e[33m$NAME"
-            otherDistroHighlighted="\e[31mUnknown \e[1m\e[33m$NAME"
-            gotOSRel=true
-        fi
+        # trim out ' Linux release' to make it fit nicer on screen
+        NAME="$(cat "$tmp/etc/yellowdog-release" | sed "s/ Linux release//")"
+        ppcDistro="\e[1;33m$NAME PPC"
+        ppcDistroHighlighted="\e[1;33m$NAME PPC"
+        otherDistro="\e[1;31mUnknown \e[33m$NAME"
+        otherDistroHighlighted="\e[31mUnknown \e[1m\e[33m$NAME"
+    fi
 
     # also, are we an old copy of Gentoo?
     if [ -f "$tmp/etc/gentoo-release" ]; then
         # yes!  if we have /etc/os-release too, then it's modern
         # if not, it's old
-
-        gotOSRel=true
-        ID="gentoo"
-
         ppcDistro="\e[1;35mGentoo PPC"
         ppcDistroHighlighted="\e[35mGentoo PPC"
         otherDistro="\e[1;31mUnknown \e[35mGentoo"
@@ -178,20 +167,17 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
 
     # these are not a fatal errors, but we
     # still can't know what distro it is...
-    if [ "$gotOSRel" != "true" ]; then
+    if [ "$gotOSRel" != "true" ] && [ "$ppcDistro" = "" ]; then
         echo "Unknown" > "$distro"
         prob "no os-release file"
         exitCode=104
-    elif [ "$ID" = "" ]; then
+    elif [ "$ID" = "" ] && [ "$ppcDistro" = "" ]; then
         echo "Unknown" > "$distro"
         prob "bad os-release file"
         exitCode=104
-    else
+    elif [ "$ppcDistro" = "" ]; then
         # we have ID from an os-release file!
         case $ID in
-        debian|fedora|gentoo|yellow-dog)
-            # handled already above
-            ;;
         arch)
             ppcDistro="\e[1;36mArchPOWER"
             ppcDistroHighlighted="\e[36mArchPOWER"
@@ -311,14 +297,10 @@ umount "$tmp"
 rmdir "$tmp"
 printf "$distroColor" > "$colors"
 if [ "$notPPC" = "true" ]; then
-    printf "$otherDistro\n" > "$distro"
-    printf "$otherDistroHighlighted" >> "$distro"
-
+    printf "$otherDistro\n$otherDistroHighlighted" > "$distro"
     printf "$otherDistroColorLen" > "$colors"
 else
-    printf "$ppcDistro\n" > "$distro"
-    printf "$ppcDistroHighlighted" >> "$distro"
-
+    printf "$ppcDistro\n$ppcDistroHighlighted" > "$distro"
     printf "$ppcDistroColorLen" > "$colors"
 fi
 
