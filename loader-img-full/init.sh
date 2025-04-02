@@ -195,18 +195,20 @@ if [ "$android" != "true" ] && [ "$batocera" != "true" ]; then
 		error "This WILL backfire horribly, but letting you try anyways..."
 		sleep 5
 	fi
-	if ! mount -n -o move /run/boot_part /target/boot; then
-		support
+	if [ -d /target/boot ]; then
+		if ! mount -n -o move /run/boot_part /target/boot; then
+			support
+		fi
+		mount -o remount,rw /target/boot
 	fi
-	mount -o remount,rw /target/boot
 
 	# XXX: systemd wants more space in /run than it actually gets by default.
 	# Fix this here by giving it just a little bit over what it wants (16MB).
 	# It's only 2MB more than the default.
-	mount -t tmpfs run /target/run -o size=20M
+	[ -d /target/run ] && mount -t tmpfs run /target/run -o size=20M
 
 	# Debian won't ever mount /dev for some reason...
-	mount -t devtmpfs devtmpfs /target/dev
+	[ -d /target/dev ] && mount -t devtmpfs devtmpfs /target/dev
 fi
 
 
