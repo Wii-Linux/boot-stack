@@ -69,7 +69,7 @@ if ! mount "$1" "$tmp" -t "$3" -o ro; then
 fi
 
 # is it even a Linux (or Android) distro?
-if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/bin" ] || [ -L "$tmp/bin" ]; }; then
+if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/lib" ] || [ -L "$tmp/lib" ]; }; then
     # not Normal Linux.... is it Android?
     if [ -d "$tmp/system" ] && [ -d "$tmp/system/bin" ] && [ -d "$tmp/system/usr" ]; then
         # it is Android!
