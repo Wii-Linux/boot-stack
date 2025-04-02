@@ -25,7 +25,7 @@ fi
 exec > /dev/console 2> /dev/console
 
 echo -en "\033[6;1H\033[J"
-echo "Wii Linux Initrd Loader v0.2.3"
+echo "Wii Linux Initrd Loader v0.2.4"
 
 echo "initrd starting" > /dev/kmsg
 . /logging.sh
