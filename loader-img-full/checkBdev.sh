@@ -186,6 +186,14 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
+	artix)
+            ppcDistro="\e[1;36mArtixPOWER"
+            ppcDistroHighlighted="\e[36mArtixPOWER"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="12 10"
+            ;;
         void)
             ppcDistro="\e[1;32mVoid PPC"
             ppcDistroHighlighted="\e[32mVoid PPC"
