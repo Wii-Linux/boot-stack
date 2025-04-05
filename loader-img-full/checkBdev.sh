@@ -105,16 +105,16 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # we can give more info if so.
     if [ -f "$tmp/etc/debian_version" ]; then
         # yes!  but which...
-        case "$(cat "$tmp/etc/debian_version")" in
-            4.*) NAME="Debian 4 (etch)" ;;
-            5.*) NAME="Debian 5 (lenny)" ;;
-            8.*) NAME="Debian 8 (jessie)" ;;
-            12.*) NAME="Debian-Ports 12 (bookworm)" ;;
-            13.*) NAME="Debian-Ports 13 (trixie)" ;;
-            *) NAME="Debian $(cat "$tmp/etc/debian_version")" ;;
+        ver="$(cat "$tmp/etc/debian_version")"
+        case "$ver" in
+            4.*) NAME="Debian 4 (etch)"; otherNAME="$NAME" ;;
+            5.*) NAME="Debian 5 (lenny)"; otherNAME="$NAME" ;;
+            8.*) NAME="Debian 8 (jessie)"; otherNAME="$NAME" ;;
+            12.*) NAME="Debian-Ports 12 (bookworm)"; otherNAME="Debian 12 (bookworm)" ;;
+            13.*) NAME="Debian-Ports 13 (trixie)"; otherNAME="Debian 13 (trixie)" ;;
+            *) NAME="Debian $ver"; otherNAME="$NAME" ;;
         esac
 
-        otherNAME="$(echo $NAME | sed "s/-Ports//")"
         ppcDistro="\e[1;31m$NAME PPC"
         ppcDistroHighlighted="\e[31m$NAME PPC"
         otherDistro="\e[1;31mUnknown $otherNAME"
@@ -126,7 +126,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # also... are we an old copy of Fedora?
     if [ -f "$tmp/etc/fedora-release" ]; then
         # trim out ' release' to make it fit nicer on screen
-        NAME="$(cat "$tmp/etc/fedora-release" | sed "s/ release//")"
+        NAME="$(sed "s/ release//" < "$tmp/etc/fedora-release")"
         ppcDistro="\e[34m$NAME PPC"
         ppcDistroHighlighted="\e[1;34m$NAME PPC"
         otherDistro="\e[1;31mUnknown \e[22m\e[34m$NAME"
@@ -142,7 +142,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         otherDistroColorLen="12 14"
 
         # trim out ' Linux release' to make it fit nicer on screen
-        NAME="$(cat "$tmp/etc/yellowdog-release" | sed "s/ Linux release//")"
+        NAME="$(sed "s/ Linux release//" < "$tmp/etc/yellowdog-release")"
         ppcDistro="\e[1;33m$NAME PPC"
         ppcDistroHighlighted="\e[1;33m$NAME PPC"
         otherDistro="\e[1;31mUnknown \e[33m$NAME"
@@ -159,7 +159,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         otherDistroHighlighted="\e[31mUnknown \e[35mGentoo"
         ppcDistroColorLen="7 5"
         otherDistroColorLen="12 10"
-        if ! [ -f "$tmp/etc/os-release" ]; then
+        if [ "$gotOSRel" != "true" ]; then
             ppcDistro="$ppcDistro (old)"
             ppcDistroHighlighted="$ppcDistroHighlighted (old)"
         fi
@@ -186,7 +186,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
-	artix)
+        artix)
             ppcDistro="\e[1;36mArtixPOWER"
             ppcDistroHighlighted="\e[36mArtixPOWER"
             otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
@@ -303,13 +303,12 @@ fi
 umount "$tmp"
 # in case umount failed, this won't nuke the FS
 rmdir "$tmp"
-printf "$distroColor" > "$colors"
 if [ "$notPPC" = "true" ]; then
-    printf "$otherDistro\n$otherDistroHighlighted" > "$distro"
-    printf "$otherDistroColorLen" > "$colors"
+    printf "%s" "$otherDistro\n$otherDistroHighlighted" > "$distro"
+    printf "%s" "$otherDistroColorLen" > "$colors"
 else
-    printf "$ppcDistro\n$ppcDistroHighlighted" > "$distro"
-    printf "$ppcDistroColorLen" > "$colors"
+    printf "%s" "$ppcDistro\n$ppcDistroHighlighted" > "$distro"
+    printf "%s" "$ppcDistroColorLen" > "$colors"
 fi
 
 [ "$android" = "true" ] && touch /._android$2
