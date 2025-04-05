@@ -105,7 +105,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # we can give more info if so.
     if [ -f "$tmp/etc/debian_version" ]; then
         # yes!  but which...
-        ver="$(cat "$tmp/etc/debian_version")"
+        read -r ver < "$tmp/etc/debian_version"
         case "$ver" in
             4.*) NAME="Debian 4 (etch)"; otherNAME="$NAME" ;;
             5.*) NAME="Debian 5 (lenny)"; otherNAME="$NAME" ;;
@@ -282,22 +282,17 @@ fi
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     out=$(file -L "$init")
-    echo "$out" | grep 'PowerPC or cisco 4500,' | grep '32-bit MSB' > /dev/null ||
-    echo "$out" | grep 'execline script text executable' > /dev/null ||
-    echo "$out" | grep 'POSIX shell script, ASCII text executable' > /dev/null || {
-        prob '/sbin/init is not for PowerPC'
-        notPPC=true
-        exitCode=105
-    }
+    case "$out" in
+        *"PowerPC or cisco 4500,"* | *"execline script text executable"* | *"POSIX shell script, ASCII text executable"*) ;;
+        *) prob '/sbin/init is not for PowerPC'; notPPC=true; exitCode=105 ;;
+    esac
 fi
 
 
 if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
     # do we have a libc?
-    if ! find -L "$tmp/lib/" -maxdepth 1 -name 'libc.s*' -quit; then
-        prob 'no libc detected'
-        exitCode=105
-    fi
+    set -- "$tmp"/lib/libc.s*
+    [ -e "$1" ] || { prob 'no libc detected'; exitCode=105; }
 fi
 
 umount "$tmp"
