@@ -289,21 +289,15 @@ if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
 fi
 
 
-if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
-    # do we have a libc?
-    set -- "$tmp"/lib/libc.s*
-    [ -e "$1" ] || { prob 'no libc detected'; exitCode=105; }
-fi
-
 umount "$tmp"
 # in case umount failed, this won't nuke the FS
 rmdir "$tmp"
 if [ "$notPPC" = "true" ]; then
-    printf "%s" "$otherDistro\n$otherDistroHighlighted" > "$distro"
-    printf "%s" "$otherDistroColorLen" > "$colors"
+    printf "$otherDistro\n$otherDistroHighlighted" > "$distro"
+    printf "$otherDistroColorLen" > "$colors"
 else
-    printf "%s" "$ppcDistro\n$ppcDistroHighlighted" > "$distro"
-    printf "%s" "$ppcDistroColorLen" > "$colors"
+    printf "$ppcDistro\n$ppcDistroHighlighted" > "$distro"
+    printf "$ppcDistroColorLen" > "$colors"
 fi
 
 [ "$android" = "true" ] && touch /._android$2
