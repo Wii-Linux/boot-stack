@@ -27,12 +27,9 @@ void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
         char path[261];
         if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "loop", 4) == 0) continue;
         if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "zram", 4) == 0) continue;
-        #ifndef PROD_BUILD
-            // Wii will never have any of these, but filter these out for debug builds
-            // because they'll be running on a PC, and we don't care about performance there.
-            if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nbd", 4) == 0) continue;
-            if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nfs", 4) == 0) continue;
-        #endif
+        if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "ram", 3) == 0) continue;
+        if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nbd", 3) == 0) continue;
+        if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nfs", 3) == 0) continue;
 
         snprintf(path, sizeof(path), "/dev/%s", ent->d_name);
 
