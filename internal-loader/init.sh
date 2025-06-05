@@ -105,7 +105,25 @@ case $(cat /proc/version) in
     "Linux version 4.19.325"*) ver=v4_19325;;
     "Linux version 4.19"*) ver=v4_19_0;;
     "Linux version 4.20"*) ver=v4_20_0;;
+    "Linux version 5.19"*) ver=v5_19_0;;
+    "Linux version 5.18"*) ver=v5_18_0;;
+    "Linux version 5.17"*) ver=v5_17_0;;
+    "Linux version 5.16"*) ver=v5_16_0;;
+    "Linux version 5.15"*) ver=v5_15_0;;
+    "Linux version 5.15.184"*) ver=v5_15184;;
+    "Linux version 5.14"*) ver=v5_14_0;;
+    "Linux version 5.13"*) ver=v5_13_0;;
+    "Linux version 5.12"*) ver=v5_12_0;;
+    "Linux version 5.11"*) ver=v5_11_0;;
+    "Linux version 5.10.237"*) ver=v5_10237;;
+    "Linux version 5.10"*) ver=v5_10_0;;
+    "Linux version 5.0"*) ver=v5_0_0;;
+    "Linux version 5.1"*) ver=v5_1_0;;
+    "Linux version 5.2"*) ver=v5_2_0;;
+    "Linux version 5.3"*) ver=v5_3_0;;
+    "Linux version 5.4.293"*) ver=v5_4_293;;
     "Linux version 5.4"*) ver=v5_4_0;;
+    "Linux version 6.1"*) ver=v6_1_0;;
     "Linux version 6.6"*) ver=v6_6_0;;
     *) error "Unknown kernel version, Techflash messed up!"; support ;;
 esac
