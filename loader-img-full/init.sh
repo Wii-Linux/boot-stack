@@ -23,9 +23,6 @@ printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
 echo "loader.img starting" > /dev/kmsg
 
-# nuke jit_setup.sh so the user can't screw up their initramfs
-rm /jit_setup.sh
-
 . /logging.sh
 . /support.sh
 . /network.sh
