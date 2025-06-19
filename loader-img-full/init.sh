@@ -61,6 +61,18 @@ if grep -q -- '-ppcdroid' /proc/version; then
 	bootmenu_args="--ppcdroid"
 fi
 
+
+mkdir /run/boot_part
+for f in /dev/mmcblk*; do
+	mount -t vfat "$f" /run/boot_part && break
+done
+
+if ! mountpoint -q /run/boot_part; then
+	error "No boot partition found! This may end poorly. Continuing in 5s..."
+	noBootPart=true
+	sleep 5
+fi
+
 while true; do
 	if ! [ -f /run/boot_part/wiilinux/migrate.mii ]; then
 		break
@@ -193,7 +205,10 @@ if [ "$android" != "true" ] && [ "$batocera" != "true" ]; then
 		sleep 5
 	fi
 	if [ -d /target/boot ]; then
-		if ! mount -n -o move /run/boot_part /target/boot; then
+		if [ "$noBootPart" = "true" ]; then
+			warn "Unable to mount boot partition to distro's /boot"
+			sleep 5
+		elif ! mount -n -o move /run/boot_part /target/boot; then
 			support
 		fi
 		mount -o remount,rw /target/boot
