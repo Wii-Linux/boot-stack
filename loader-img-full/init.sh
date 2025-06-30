@@ -30,9 +30,6 @@ echo "loader.img starting" > /dev/kmsg
 
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
-# Filesystem drivers
-modprobe ext4
-
 # global variables
 auto_boot_partition=""
 auto_boot_timeout=500
