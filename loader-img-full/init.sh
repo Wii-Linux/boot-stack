@@ -30,27 +30,6 @@ echo "loader.img starting" > /dev/kmsg
 
 printf "1\t4\t1\t7" > /proc/sys/kernel/printk
 
-# global variables
-auto_boot_partition=""
-auto_boot_timeout=500
-
-# parse cmdline
-for arg in $(cat /proc/cmdline); do
-	if echo "$arg" | grep 'wii_linux.loader'; then
-		# parse it
-		case "$arg" in
-			wii_linux.loader.auto_boot_partition=*)
-				auto_boot_partition=${arg//wii_linux\.loader\.auto_boot_partition=//} ;;
-			wii_linux.loader.auto_boot_timeout=*)
-				auto_boot_timeout=${arg//wii_linux\.loader\.auto_boot_timeout=//} ;;
-			*)
-				warn "Unrecognized wii_linux.loader argument: $arg"
-				sleep 5
-				;;
-		esac
-	fi
-done
-
 if grep -q -- '-ppcdroid' /proc/version; then
 	warn "PPCDroid-only kernel detected.  Be warned, this is not stable!"
 	sleep 2
