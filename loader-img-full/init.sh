@@ -44,9 +44,21 @@ for f in /dev/mmcblk* /dev/gcnsd*; do
 done
 
 if ! mountpoint -q /run/boot_part; then
-	error "No boot partition found! This may end poorly. Continuing in 5s..."
+	error "No boot partition found! This may end poorly. Continuing in 5s."
 	noBootPart=true
 	sleep 5
+fi
+
+# don't know if there's NULLs, newlines, etc, just handle it all
+if grep -aq -- 'nintendo,gamecube' /sys/firmware/devicetree/base/model; then
+	warn "Detected running on a GameCube (experimental), beware..."
+	gamecube=true
+	sleep 2
+
+	if ! mkswap /dev/gcn-aram || ! swapon -p 100 /dev/gcn-aram; then
+		error "swap on ARAM failed, can't continue w/ 24MB of RAM..."
+		support
+	fi
 fi
 
 while true; do
