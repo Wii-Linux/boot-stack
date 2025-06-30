@@ -39,7 +39,7 @@ fi
 
 
 mkdir /run/boot_part
-for f in /dev/mmcblk*; do
+for f in /dev/mmcblk* /dev/gcnsd*; do
 	mount -t vfat "$f" /run/boot_part && break
 done
 
