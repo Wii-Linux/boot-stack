@@ -220,7 +220,6 @@ void DEV_Scan(char* block_device) {
 
     if (rc != 0) {
         addProblem("Couldn't execute blkid fullprobe");
-        blkid_free_probe(pr);
         fprintf(logfile, "DEV_Scan(): skipping to out because rc!=0\r\n");
         goto out;
     }
