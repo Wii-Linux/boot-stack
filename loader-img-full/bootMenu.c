@@ -29,9 +29,6 @@ int main() {
     char removed [MAX_BDEV][MAX_BDEV_CHAR];
     struct utsname tmp;
     struct timeval timeout, start_time, current_time;
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(STDIN_FILENO, &readfds);
     int result;
 
     // XXX: HACK!  Somehow, and I have absolutely no damned idea how,
@@ -99,16 +96,9 @@ int main() {
                 MENU_Redraw(true, true);
                 i++;
 
-                // any new keypresses?
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 5000; // don't wait very long, only 5ms, that way we catch any inputs that are
-                                        // already waiting, but don't block waiting for anything if there are none.
-                FD_ZERO(&readfds);
-                FD_SET(STDIN_FILENO, &readfds);
-                result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout);
-                if (result > 0) {
-	                INPUT_Handle();
-                }
+		ev = -2;
+		while (ev != INPUT_EVENT_NONE)
+			ev = INPUT_Handle();
             }
             i = 0;
 
@@ -133,15 +123,9 @@ int main() {
             BOOT_Go();
         }
 
-        FD_ZERO(&readfds);
-        FD_SET(STDIN_FILENO, &readfds);
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 33333; // Approximately 30 times per second
-
-        // Check for key presses
-        result = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &timeout);
-        if (result > 0) {
-           INPUT_Handle();
+	ev = -2;
+	while (ev != INPUT_TYPE_NONE) 
+		INPUT_Handle();
 
            // Calculate elapsed time and sleep to maintain 30 iterations per second
            gettimeofday(&current_time, NULL);
@@ -156,7 +140,6 @@ int main() {
            }
 
            start_time = current_time; // Update start time for next iteration
-        }
     }
 
     #if !defined(PROD_BUILD) && !defined(DEBUG_WII)
