@@ -93,13 +93,15 @@ int main() {
 
 			while (added[i][0] != '\0') {
 				DEV_Scan(added[i]);
+
+				ev = -2;
+				while (ev != INPUT_EVENT_NONE)
+					ev = INPUT_Handle();
+
 				MENU_Redraw(true, true);
 				i++;
-
-		ev = -2;
-		while (ev != INPUT_EVENT_NONE)
-			ev = INPUT_Handle();
 			}
+
 			i = 0;
 
 			while (removed[i][0] != '\0') {
@@ -123,9 +125,9 @@ int main() {
 			BOOT_Go();
 		}
 
-	ev = -2;
-	while (ev != INPUT_TYPE_NONE) 
-		INPUT_Handle();
+		ev = -2;
+		while (ev != INPUT_TYPE_NONE)
+			INPUT_Handle();
 
 		// Calculate elapsed time and sleep to maintain 30 iterations per second
 		gettimeofday(&current_time, NULL);
