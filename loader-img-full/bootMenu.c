@@ -28,8 +28,8 @@ int main() {
 	char added   [MAX_BDEV][MAX_BDEV_CHAR];
 	char removed [MAX_BDEV][MAX_BDEV_CHAR];
 	struct utsname tmp;
-	struct timeval timeout, start_time, current_time;
-	int result;
+	struct timeval start_time, current_time;
+	inputEvent_t ev;
 
 	// XXX: HACK!  Somehow, and I have absolutely no damned idea how,
 	// uClibc botches argument handling!  argc turns into argv, and
@@ -95,7 +95,7 @@ int main() {
 				DEV_Scan(added[i]);
 
 				ev = -2;
-				while (ev != INPUT_EVENT_NONE)
+				while (ev != INPUT_TYPE_NONE)
 					ev = INPUT_Handle();
 
 				MENU_Redraw(true, true);
@@ -128,6 +128,11 @@ int main() {
 		ev = -2;
 		while (ev != INPUT_TYPE_NONE)
 			INPUT_Handle();
+
+		if (MENU_NeedRedraw) {
+			MENU_Redraw(true, false);
+			MENU_NeedRedraw = false;
+		}
 
 		// Calculate elapsed time and sleep to maintain 30 iterations per second
 		gettimeofday(&current_time, NULL);

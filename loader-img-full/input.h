@@ -1,8 +1,7 @@
 #ifndef INPUT_H
 #define INPUT_H
-extern void INPUT_Handle();
 #define MAX_KBD_DEVICES 8
-#define CONTROLLER_DEVICE "/dev/input/by-path/"
+#define CONTROLLER_DEVICE "/dev/input/js0"
 
 typedef enum {
 	INPUT_TYPE_NONE,
@@ -17,5 +16,4 @@ typedef enum {
 extern int INPUT_Init();
 extern void INPUT_Shutdown();
 extern inputEvent_t INPUT_Handle();
-#endif
 #endif

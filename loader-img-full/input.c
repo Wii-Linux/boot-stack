@@ -1,12 +1,5 @@
-#include <stdlib.h>
-#include <unistd.h>
-#include "timer.h"
-#include "menu.h"
-#include "items.h"
-#include "cleanup.h"
-#include "boot.h"
-
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -14,13 +7,17 @@
 #include <poll.h>
 #include <linux/input.h>
 #include <linux/input-event-codes.h>
+#include <linux/joystick.h>
 #include <termios.h>
 #include <time.h>
 
-#include "input.h"
-#include "state.h"
 #include "menu.h"
-#include "screen.h"
+#include "items.h"
+#include "cleanup.h"
+#include "boot.h"
+#include "timer.h"
+#include "input.h"
+
 
 static int controllerFd;
 
@@ -77,7 +74,7 @@ int INPUT_Init(void) {
 		return 1;
 	}
 
-	/* Set up poll structs for power and volume buttons and the touchscreen */
+	/* Set up poll structs for the controller and keyboards */
 	fds[0].fd = controllerFd;
 	fds[0].events = POLLIN;
 
@@ -115,16 +112,17 @@ int INPUT_Init(void) {
 
 void INPUT_Shutdown(void) {
 	if (controllerFd >= 0) {
-		close(touchFd);
+		close(controllerFd);
 	}
 
 	/* restore old terminal settings */
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
 }
 
-inputEvent_t INPUT_Check(void) {
+static inputEvent_t INPUT_Check(void) {
 	int ret, i;
 	struct input_event ev;
+	struct js_event js_ev;
 
 	ret = poll(fds, 3 + numKbdFds, 30);  /* wait for up to 30ms */
 
@@ -135,15 +133,31 @@ inputEvent_t INPUT_Check(void) {
 
 	/* Check for events */
 	if (fds[0].revents & POLLIN) {
-		read(pwrButtonFd, &ev, sizeof(ev));
+		read(controllerFd, &js_ev, sizeof(js_ev));
 
 		#ifdef INPUT_DEBUG
-		printf("Event from controller: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
+		printf("Event from controller: type=%u number=%u value=%d\n", js_ev.type, js_ev.number, js_ev.value);
 		#endif
 
-		if (ev.code == KEY_SLEEP && ev.value == 1) {
+		if (js_ev.type == JS_EVENT_BUTTON &&
+		    js_ev.number == 0 /* A button */ &&
+		    js_ev.value == 1 /* pressed */)
 			return INPUT_TYPE_SELECT;
-		}
+
+		if (js_ev.type == JS_EVENT_BUTTON &&
+		    js_ev.number == 2 /* X button */ &&
+		    js_ev.value == 1 /* pressed */)
+			return INPUT_TYPE_RECOVERY;
+
+		if (js_ev.type == JS_EVENT_AXIS &&
+		    js_ev.number == 7 /* D-Pad Up/Down */ &&
+		    js_ev.value == -32767 /* Up */)
+			return INPUT_TYPE_UP;
+
+		if (js_ev.type == JS_EVENT_AXIS &&
+		    js_ev.number == 7 /* D-Pad Up/Down */ &&
+		    js_ev.value == 32767 /* Down */)
+			return INPUT_TYPE_DOWN;
 	}
 
 	for (i = 1; i < MAX_KBD_DEVICES; i++) {
@@ -164,4 +178,43 @@ inputEvent_t INPUT_Check(void) {
 	}
 
 	return INPUT_TYPE_NONE;
+}
+
+inputEvent_t INPUT_Handle(void) {
+	inputEvent_t ret = INPUT_Check();
+	switch (ret) {
+		case INPUT_TYPE_RECOVERY: {
+			// exiting with status 2 causes init to spawn a recovery shell, and
+			// when exited, restart boot_menu.
+			doCleanup();
+			exit(2);
+			break;
+		}
+		case INPUT_TYPE_SELECT: {
+			BOOT_Go();
+			break;
+		}
+		case INPUT_TYPE_UP: {
+			if (MENU_Selected > 0) {
+				MENU_LastSelected = MENU_Selected;
+				MENU_Selected--;
+				MENU_NeedFullRedraw = false;
+				MENU_NeedRedraw = true;
+			}
+			break;
+		}
+		case INPUT_TYPE_DOWN: {
+			if (MENU_Selected < ITEM_NumItems - 1) {
+				MENU_LastSelected = MENU_Selected;
+				MENU_Selected++;
+				MENU_NeedFullRedraw = false;
+				MENU_NeedRedraw = true;
+			}
+			break;
+		}
+		case INPUT_TYPE_ERROR:
+		case INPUT_TYPE_NONE:
+			break;
+	}
+	return ret;
 }
