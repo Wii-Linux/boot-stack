@@ -55,6 +55,8 @@ int main() {
 	}
 	#endif
 
+	INPUT_Init();
+
 
 	for (int i = 0; i != MAX_BDEV; i++) {
 		bzero(bdevs   [i], MAX_BDEV_CHAR);
@@ -95,8 +97,10 @@ int main() {
 				DEV_Scan(added[i]);
 
 				ev = -2;
-				while (ev != INPUT_TYPE_NONE)
+				while (ev != INPUT_TYPE_NONE) {
 					ev = INPUT_Handle();
+					fprintf(logfile, "INPUT_Handle() returned, ev: %d, MENU_NeedRedraw: %d\n", ev, MENU_NeedRedraw);
+				}
 
 				MENU_Redraw(true, true);
 				i++;
@@ -126,8 +130,10 @@ int main() {
 		}
 
 		ev = -2;
-		while (ev != INPUT_TYPE_NONE)
-			INPUT_Handle();
+		while (ev != INPUT_TYPE_NONE) {
+			ev = INPUT_Handle();
+			fprintf(logfile, "INPUT_Handle() returned, ev: %d, MENU_NeedRedraw: %d\n", ev, MENU_NeedRedraw);
+		}
 
 		if (MENU_NeedRedraw) {
 			MENU_Redraw(true, false);

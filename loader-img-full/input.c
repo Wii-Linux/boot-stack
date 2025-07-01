@@ -11,6 +11,7 @@
 #include <termios.h>
 #include <time.h>
 
+#include "include.h"
 #include "menu.h"
 #include "items.h"
 #include "cleanup.h"
@@ -20,12 +21,13 @@
 
 
 static int controllerFd;
+static bool noController = false;
 
 static int kbdFds[MAX_KBD_DEVICES];
+static char kbdPaths[16][MAX_KBD_DEVICES];
 static int numKbdFds = 0;
+static int numKbdPaths = 0;
 static struct pollfd fds[1 + MAX_KBD_DEVICES];
-/* static char kbdBuf[128]; */
-static struct termios oldTerm;
 
 #define TEST_KEY(k) (keybits[(k)/8] & (1 << ((k)%8)))
 static int isKeyboard(const char *devPath) {
@@ -62,28 +64,31 @@ static int isKeyboard(const char *devPath) {
 	return 0;
 }
 
-
-int INPUT_Init(void) {
+static void INPUT_CheckNewKbds(void) {
 	struct dirent *dp;
 	DIR *dir;
-	struct termios newTerm;
 
-	controllerFd = open(CONTROLLER_DEVICE, O_RDONLY);
-	if (controllerFd < 0) {
-		perror("Error opening controller device");
-		return 1;
-	}
-
-	/* Set up poll structs for the controller and keyboards */
-	fds[0].fd = controllerFd;
-	fds[0].events = POLLIN;
+	/* check for keyboards */
+	dir = opendir("/dev/input");
 
 	while ((dp = readdir(dir)) != NULL) {
+		bool skip = false;
 		if (strncmp(dp->d_name, "event", 5) == 0) {
 			char fullpath[268]; /* d_name is 256 bytes */
+			int i;
+			for (i = 0; i != numKbdPaths; i++) {
+				if (strncmp(dp->d_name, kbdPaths[i], 15) == 0) {
+					skip = true; // we already know this one
+					break;
+				}
+			}
+			if (skip) continue;
+
 			sprintf(fullpath, "/dev/input/%s", dp->d_name);
 
+			fprintf(logfile, "Checking if %s is a keyboard\n", fullpath);
 			if (isKeyboard(fullpath) && numKbdFds < MAX_KBD_DEVICES) {
+				fprintf(logfile, "It is\n");
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
 				if (fd >= 0) {
 					kbdFds[numKbdFds++] = fd;
@@ -91,22 +96,46 @@ int INPUT_Init(void) {
 					fds[numKbdFds].events = POLLIN;
 				}
 			}
+			else {
+				fprintf(logfile, "It is NOT\n");
+			}
+
+			strncpy(kbdPaths[numKbdPaths], dp->d_name, 15);
+			numKbdPaths++;
+			sleep(1);
 		}
 	}
 	closedir(dir);
+}
 
 
-	/* save old terminal info */
-	tcgetattr(STDIN_FILENO, &oldTerm);
+int INPUT_Init(void) {
+	struct js_event js_ev;
 
-	/* set it up so we can properly recieve arrow keys properly without needing a newline */
-	/* breaks volume buttons??? */
-	newTerm = oldTerm;
-	newTerm.c_lflag &= ~(ICANON | ECHO);
-	newTerm.c_cc[VMIN] = 1;
-	newTerm.c_cc[VTIME] = 0;
-	tcsetattr(STDIN_FILENO, TCSANOW, &newTerm);
+	controllerFd = open(CONTROLLER_DEVICE, O_RDONLY);
+	if (controllerFd < 0) {
+		perror("Error opening controller device");
+		// this is nonfatal, the user might just
+		// not have a GCN controller
+		noController = true;
+	}
 
+	/* Set up poll structs for the controller and keyboards */
+	if (!noController) {
+		fds[0].fd = controllerFd;
+		fds[0].events = POLLIN;
+
+		// flush out it's starting input
+		while (true) {
+			poll(fds, 1, 10);
+			if (fds[0].revents & POLLIN)
+				read(controllerFd, &js_ev, sizeof(js_ev));
+			else
+				break;
+		}
+	}
+
+	INPUT_CheckNewKbds();
 	return 0;
 }
 
@@ -114,9 +143,6 @@ void INPUT_Shutdown(void) {
 	if (controllerFd >= 0) {
 		close(controllerFd);
 	}
-
-	/* restore old terminal settings */
-	tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
 }
 
 static inputEvent_t INPUT_Check(void) {
@@ -124,7 +150,7 @@ static inputEvent_t INPUT_Check(void) {
 	struct input_event ev;
 	struct js_event js_ev;
 
-	ret = poll(fds, 3 + numKbdFds, 30);  /* wait for up to 30ms */
+	ret = poll(fds, 1 + numKbdFds, 30);  /* wait for up to 30ms */
 
 	if (ret < 0) {
 		perror("poll");
@@ -132,12 +158,10 @@ static inputEvent_t INPUT_Check(void) {
 	}
 
 	/* Check for events */
-	if (fds[0].revents & POLLIN) {
+	if (!noController && fds[0].revents & POLLIN) {
 		read(controllerFd, &js_ev, sizeof(js_ev));
 
-		#ifdef INPUT_DEBUG
-		printf("Event from controller: type=%u number=%u value=%d\n", js_ev.type, js_ev.number, js_ev.value);
-		#endif
+		fprintf(logfile, "Event from controller: type=%u number=%u value=%d\n", js_ev.type, js_ev.number, js_ev.value);
 
 		if (js_ev.type == JS_EVENT_BUTTON &&
 		    js_ev.number == 0 /* A button */ &&
@@ -162,13 +186,11 @@ static inputEvent_t INPUT_Check(void) {
 
 	for (i = 1; i < MAX_KBD_DEVICES; i++) {
 		if (fds[i].revents & POLLIN) {
-			read(kbdFds[i - 2], &ev, sizeof(ev));
+			read(kbdFds[i - 1], &ev, sizeof(ev));
 
-			#ifdef INPUT_DEBUG
-			printf("Event from keyboard: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
-			#endif
+			fprintf(logfile, "Event from keyboard: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
 
-			if (ev.value == 1 && (ev.code == KEY_DOWN || ev.code == KEY_UP || ev.code == KEY_ENTER)) {
+			if (ev.value == 1 && (ev.code == KEY_DOWN || ev.code == KEY_UP || ev.code == KEY_ENTER || ev.code == KEY_R)) {
 				if (ev.code == KEY_DOWN) return INPUT_TYPE_DOWN;
 				if (ev.code == KEY_UP) return INPUT_TYPE_UP;
 				if (ev.code == KEY_ENTER) return INPUT_TYPE_SELECT;
@@ -181,6 +203,7 @@ static inputEvent_t INPUT_Check(void) {
 }
 
 inputEvent_t INPUT_Handle(void) {
+	INPUT_CheckNewKbds();
 	inputEvent_t ret = INPUT_Check();
 	switch (ret) {
 		case INPUT_TYPE_RECOVERY: {
@@ -215,6 +238,10 @@ inputEvent_t INPUT_Handle(void) {
 		case INPUT_TYPE_ERROR:
 		case INPUT_TYPE_NONE:
 			break;
+	}
+	if (ret != INPUT_TYPE_NONE) {
+		TIMER_Stop();
+		fprintf(logfile, "Got real input!\n");
 	}
 	return ret;
 }
