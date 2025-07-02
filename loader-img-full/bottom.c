@@ -3,8 +3,9 @@
 
 void BOTTOM_Init() {
 	fprintf(logfile, "BOTTOM_Init() called\r\n");
-	printf("\e[%d;1HPress Up/Down to select an item, Enter to boot", TERM_Height - 1);
-	printf("\e[%d;1Hr: Recovery Shell", TERM_Height);
+	printf("\e[%d;1HControls: Supports Keyboard or GCN Controller, format of \"Kbd Key [GCN button]\"", TERM_Height - 2);
+	printf("\e[%d;1HPress Up/Down (Keyboard/D-Pad) to select an item, Enter [A] to boot", TERM_Height - 1);
+	printf("\e[%d;1Hr [X]: Recovery Shell", TERM_Height);
 	fflush(stdout);
 }
 void BOTTOM_Destroy() {
