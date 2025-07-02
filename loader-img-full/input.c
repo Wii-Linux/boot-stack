@@ -102,7 +102,6 @@ static void INPUT_CheckNewKbds(void) {
 
 			strncpy(kbdPaths[numKbdPaths], dp->d_name, 15);
 			numKbdPaths++;
-			sleep(1);
 		}
 	}
 	closedir(dir);
