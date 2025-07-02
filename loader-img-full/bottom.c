@@ -9,6 +9,7 @@ void BOTTOM_Init() {
 	fflush(stdout);
 }
 void BOTTOM_Destroy() {
+	printf("\e[%d;1H%*c", TERM_Height - 2, TERM_Width, ' ');
 	printf("\e[%d;1H%*c", TERM_Height - 1, TERM_Width, ' ');
 	printf("\e[%d;1H%*c", TERM_Height, TERM_Width, ' ');
 	fflush(stdout);
