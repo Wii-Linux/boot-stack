@@ -183,9 +183,6 @@ fi
 #	support
 #fi
 
-echo "fixing up filesystems"
-mount -t tmpfs none /
-
 if [ "$android" != "true" ] && [ "$batocera" != "true" ]; then
 	if [ "$ppcdroid_only" = "true" ]; then
 		error "Trying to boot a Linux distro on an Android kernel!!!"
