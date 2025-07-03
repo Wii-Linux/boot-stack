@@ -208,6 +208,31 @@ if [ "$android" != "true" ] && [ "$batocera" != "true" ]; then
 	[ -d /target/dev ] && mount -t devtmpfs devtmpfs /target/dev
 fi
 
+# if running on a GameCube, we need to ensure that we have swap to SDGecko
+# ARAM can help, but systemd still blows up dramatically if we don't.
+while [ "$gamecube" = "true" ]; do
+	if ! [ -f /target/swapfile ]; then
+		error "No swapfile detected while running on a GameCube"
+		error "This is an awful idea, and your OS likely won't boot"
+		warn "Continuing anyways in 10 seconds..."
+		sleep 10
+		break
+	elif [ "$(stat -c %s /target/swapfile)" -lt "67108864" ]; then
+		error "swapfile < 64MB detected while running on a GameCube"
+		error "This is an awful idea, and your OS likely won't boot"
+		warn "Continuing anyways in 10 seconds..."
+		sleep 10
+	fi
+
+	if ! swapon /target/swapfile -p -100; then
+		error "Enable swapfile failed while running on a GameCube"
+		error "This is an awful idea, and your OS likely won't boot"
+		warn "Continuing anyways in 10 seconds..."
+		sleep 10
+	fi
+	break
+done
+
 
 cat /._printk_restore > /proc/sys/kernel/printk
 success "About to switch_root in!"
