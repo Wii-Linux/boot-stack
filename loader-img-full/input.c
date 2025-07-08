@@ -145,59 +145,70 @@ void INPUT_Shutdown(void) {
 }
 
 static inputEvent_t INPUT_Check(void) {
-	int ret, i;
+	int ret, i, keepGoing;
 	struct input_event ev;
 	struct js_event js_ev;
 
-	ret = poll(fds, 1 + numKbdFds, 30);  /* wait for up to 30ms */
+	keepGoing = 1;
 
-	if (ret < 0) {
-		perror("poll");
-		return INPUT_TYPE_ERROR;
-	}
+	while (keepGoing) {
+		keepGoing = 0; // break unless all we got was a release
+		ret = poll(fds, 1 + numKbdFds, 30);  /* wait for up to 30ms */
 
-	/* Check for events */
-	if (!noController && fds[0].revents & POLLIN) {
-		read(controllerFd, &js_ev, sizeof(js_ev));
+		if (ret < 0) {
+			perror("poll");
+			return INPUT_TYPE_ERROR;
+		}
 
-		fprintf(logfile, "Event from controller: type=%u number=%u value=%d\n", js_ev.type, js_ev.number, js_ev.value);
+		/* Check for events */
+		if (!noController && fds[0].revents & POLLIN) {
+			read(controllerFd, &js_ev, sizeof(js_ev));
 
-		if (js_ev.type == JS_EVENT_BUTTON &&
-		    js_ev.number == 0 /* A button */ &&
-		    js_ev.value == 1 /* pressed */)
-			return INPUT_TYPE_SELECT;
+			fprintf(logfile, "Event from controller: type=%u number=%u value=%d\n", js_ev.type, js_ev.number, js_ev.value);
 
-		if (js_ev.type == JS_EVENT_BUTTON &&
-		    js_ev.number == 2 /* X button */ &&
-		    js_ev.value == 1 /* pressed */)
-			return INPUT_TYPE_RECOVERY;
+			if (js_ev.type == JS_EVENT_BUTTON &&
+			    js_ev.number == 0 /* A button */ &&
+			    js_ev.value == 1 /* pressed */)
+				return INPUT_TYPE_SELECT;
 
-		if (js_ev.type == JS_EVENT_AXIS &&
-		    js_ev.number == 7 /* D-Pad Up/Down */ &&
-		    js_ev.value == -32767 /* Up */)
-			return INPUT_TYPE_UP;
+			if (js_ev.type == JS_EVENT_BUTTON &&
+			    js_ev.number == 2 /* X button */ &&
+			    js_ev.value == 1 /* pressed */)
+				return INPUT_TYPE_RECOVERY;
 
-		if (js_ev.type == JS_EVENT_AXIS &&
-		    js_ev.number == 7 /* D-Pad Up/Down */ &&
-		    js_ev.value == 32767 /* Down */)
-			return INPUT_TYPE_DOWN;
-	}
+			if (js_ev.type == JS_EVENT_AXIS &&
+			    js_ev.number == 7 /* D-Pad Up/Down */ &&
+			    js_ev.value == -32767 /* Up */)
+				return INPUT_TYPE_UP;
 
-	for (i = 1; i < MAX_KBD_DEVICES; i++) {
-		if (fds[i].revents & POLLIN) {
-			read(kbdFds[i - 1], &ev, sizeof(ev));
+			if (js_ev.type == JS_EVENT_AXIS &&
+			    js_ev.number == 7 /* D-Pad Up/Down */ &&
+			    js_ev.value == 32767 /* Down */)
+				return INPUT_TYPE_DOWN;
 
-			fprintf(logfile, "Event from keyboard: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
+			// we got something, but it was probably a release
+			keepGoing = 1;
+		}
 
-			if (ev.value == 1 && (ev.code == KEY_DOWN || ev.code == KEY_UP || ev.code == KEY_ENTER || ev.code == KEY_R)) {
-				if (ev.code == KEY_DOWN) return INPUT_TYPE_DOWN;
-				if (ev.code == KEY_UP) return INPUT_TYPE_UP;
-				if (ev.code == KEY_ENTER) return INPUT_TYPE_SELECT;
-				if (ev.code == KEY_R) return INPUT_TYPE_RECOVERY;
+		for (i = 1; i < MAX_KBD_DEVICES; i++) {
+			if (fds[i].revents & POLLIN) {
+				read(kbdFds[i - 1], &ev, sizeof(ev));
+
+				fprintf(logfile, "Event from keyboard: type=%d code=%d value=%d\n", ev.type, ev.code, ev.value);
+
+				if (ev.value == 1 && (ev.code == KEY_DOWN || ev.code == KEY_UP || ev.code == KEY_ENTER || ev.code == KEY_R)) {
+					if (ev.code == KEY_DOWN) return INPUT_TYPE_DOWN;
+					if (ev.code == KEY_UP) return INPUT_TYPE_UP;
+					if (ev.code == KEY_ENTER) return INPUT_TYPE_SELECT;
+					if (ev.code == KEY_R) return INPUT_TYPE_RECOVERY;
+				}
+
+
+				// we got something, but it was probably a release
+				keepGoing = 1;
 			}
 		}
 	}
-
 	return INPUT_TYPE_NONE;
 }
 
