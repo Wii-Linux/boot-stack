@@ -94,6 +94,7 @@ static void INPUT_CheckNewKbds(void) {
 					kbdFds[numKbdFds++] = fd;
 					fds[numKbdFds].fd = fd;
 					fds[numKbdFds].events = POLLIN;
+					ioctl(fd, EVIOCGRAB, 1); /* grab exclusive access to the device */
 				}
 			}
 			else {
