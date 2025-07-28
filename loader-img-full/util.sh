@@ -8,7 +8,7 @@ recoveryShell() {
     printf '\033[32mYou may contact support at the Discord Server linked at \033[4;36mhttps://wii-linux.org\r\n'
     printf "\033[0mYou'll probably want to run the \"\033[1;36msupport\033[0m\" command, and follow it's steps.\r\n"
     printf '\r\n'
-    printf "If you do know what you're doing, this is a GNU bash shell, and\r\n"
+    printf "If you do know what you're doing, this is a Busybox ash shell, and\r\n"
     printf "there's a few basic utilities (busybox) lurking around in here.\r\n"
     printf "\033[1;33mIf that was gibberish to you, I suggest following the topmost instructions!\033[0m\r\n"
     printf "If you do understand what those are, then have at it, and send some patches!\r\n"
@@ -23,8 +23,8 @@ recoveryShell() {
     
     # do we want to continue after this?
     if [ "$1" = "false" ]; then
-        /bin/bash
+        /bin/ash
     else
-        exec /bin/bash
+        exec /bin/ash
     fi
 }
