@@ -90,16 +90,17 @@ static void INPUT_CheckNewKbds(void) {
 			if (isKeyboard(fullpath)) {
 				fprintf(logfile, "It is\n");
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
-				if (fd >= 0) {
-					kbdFds = realloc(kbdFds, (numKbdFds + 1) * sizeof(int));
-
-					/* +2 is to account for not only the new entry, but also the entry for the controller */
-					fds = realloc(fds, (numKbdFds + 2) * sizeof(struct pollfd));
-					kbdFds[numKbdFds++] = fd;
-					fds[numKbdFds].fd = fd;
-					fds[numKbdFds].events = POLLIN;
-					ioctl(fd, EVIOCGRAB, 1); /* grab exclusive access to the device */
+				if (fd < 0) {
+					fprintf(logfile, "Opening %s failed (%d): %s (%d)\n", fullpath, fd, strerror(errno), errno);
+					continue;
 				}
+				kbdFds = realloc(kbdFds, (numKbdFds + 1) * sizeof(int));
+
+				/* +2 is to account for not only the new entry, but also the entry for the controller */
+				fds = realloc(fds, (numKbdFds + 2) * sizeof(struct pollfd));
+				kbdFds[numKbdFds++] = fd;
+				fds[numKbdFds].fd = fd;
+				fds[numKbdFds].events = POLLIN;
 			}
 			else {
 				fprintf(logfile, "It is NOT\n");
