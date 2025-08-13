@@ -23,11 +23,11 @@
 static int controllerFd;
 static bool noController = false;
 
-static int kbdFds[MAX_KBD_DEVICES];
-static char kbdPaths[16][MAX_KBD_DEVICES];
-static int numKbdFds = 0;
-static int numKbdPaths = 0;
-static struct pollfd fds[1 + MAX_KBD_DEVICES];
+static int *kbdFds;
+static char (*kbdPaths)[KBD_PATH_MAX_CHAR];
+static int numKbdFds = 1;
+static int numKbdPaths = 1;
+static struct pollfd *fds;
 
 #define TEST_KEY(k) (keybits[(k)/8] & (1 << ((k)%8)))
 static int isKeyboard(const char *devPath) {
@@ -77,7 +77,7 @@ static void INPUT_CheckNewKbds(void) {
 			char fullpath[268]; /* d_name is 256 bytes */
 			int i;
 			for (i = 0; i != numKbdPaths; i++) {
-				if (strncmp(dp->d_name, kbdPaths[i], 15) == 0) {
+				if (strncmp(dp->d_name, kbdPaths[i], KBD_PATH_MAX_CHAR - 1) == 0) {
 					skip = true; // we already know this one
 					break;
 				}
@@ -87,10 +87,12 @@ static void INPUT_CheckNewKbds(void) {
 			sprintf(fullpath, "/dev/input/%s", dp->d_name);
 
 			fprintf(logfile, "Checking if %s is a keyboard\n", fullpath);
-			if (isKeyboard(fullpath) && numKbdFds < MAX_KBD_DEVICES) {
+			if (isKeyboard(fullpath)) {
 				fprintf(logfile, "It is\n");
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
 				if (fd >= 0) {
+					kbdFds = realloc(kbdFds, (numKbdFds + 1) * sizeof(int));
+					fds = realloc(fds, (numKbdFds + 1) * sizeof(struct pollfd));
 					kbdFds[numKbdFds++] = fd;
 					fds[numKbdFds].fd = fd;
 					fds[numKbdFds].events = POLLIN;
@@ -101,7 +103,8 @@ static void INPUT_CheckNewKbds(void) {
 				fprintf(logfile, "It is NOT\n");
 			}
 
-			strncpy(kbdPaths[numKbdPaths], dp->d_name, 15);
+			kbdPaths = realloc(kbdPaths, (numKbdPaths + 1) * KBD_PATH_MAX_CHAR);
+			strncpy(kbdPaths[numKbdPaths], dp->d_name, KBD_PATH_MAX_CHAR - 1);
 			numKbdPaths++;
 		}
 	}
@@ -134,6 +137,9 @@ int INPUT_Init(void) {
 				break;
 		}
 	}
+	kbdPaths = malloc(1 * KBD_PATH_MAX_CHAR);
+	fds = malloc(1 * sizeof(struct pollfd));
+	kbdFds = malloc(1 * sizeof(int));
 
 	INPUT_CheckNewKbds();
 	return 0;
@@ -143,6 +149,9 @@ void INPUT_Shutdown(void) {
 	if (controllerFd >= 0) {
 		close(controllerFd);
 	}
+	free(kbdPaths);
+	free(fds);
+	free(kbdFds);
 }
 
 static inputEvent_t INPUT_Check(void) {
@@ -154,7 +163,7 @@ static inputEvent_t INPUT_Check(void) {
 
 	while (keepGoing) {
 		keepGoing = 0; // break unless all we got was a release
-		ret = poll(fds, 1 + numKbdFds, 30);  /* wait for up to 30ms */
+		ret = poll(fds, numKbdFds, 30);  /* wait for up to 30ms */
 
 		if (ret < 0) {
 			perror("poll");
@@ -191,7 +200,7 @@ static inputEvent_t INPUT_Check(void) {
 			keepGoing = 1;
 		}
 
-		for (i = 1; i < MAX_KBD_DEVICES; i++) {
+		for (i = 1; i < numKbdFds; i++) {
 			if (fds[i].revents & POLLIN) {
 				read(kbdFds[i - 1], &ev, sizeof(ev));
 

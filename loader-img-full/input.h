@@ -1,6 +1,6 @@
 #ifndef INPUT_H
 #define INPUT_H
-#define MAX_KBD_DEVICES 8
+#define KBD_PATH_MAX_CHAR 16
 #define CONTROLLER_DEVICE "/dev/input/js0"
 
 typedef enum {
