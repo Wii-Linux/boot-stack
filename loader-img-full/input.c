@@ -99,10 +99,8 @@ static void INPUT_CheckNewKbds(void) {
 			}
 			else {
 				fprintf(logfile, "It is NOT\n");
-				continue;
 			}
 
-			printf("num: %d, name: %s\n", numKbdPaths, dp->d_name);
 			strncpy(kbdPaths[numKbdPaths], dp->d_name, 15);
 			numKbdPaths++;
 		}
