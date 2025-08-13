@@ -92,7 +92,9 @@ static void INPUT_CheckNewKbds(void) {
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
 				if (fd >= 0) {
 					kbdFds = realloc(kbdFds, (numKbdFds + 1) * sizeof(int));
-					fds = realloc(fds, (numKbdFds + 1) * sizeof(struct pollfd));
+
+					/* +2 is to account for not only the new entry, but also the entry for the controller */
+					fds = realloc(fds, (numKbdFds + 2) * sizeof(struct pollfd));
 					kbdFds[numKbdFds++] = fd;
 					fds[numKbdFds].fd = fd;
 					fds[numKbdFds].events = POLLIN;
