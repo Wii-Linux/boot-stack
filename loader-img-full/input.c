@@ -124,6 +124,7 @@ int INPUT_Init(void) {
 		// not have a GCN controller
 		noController = true;
 	}
+	fds = malloc(1 * sizeof(struct pollfd));
 
 	/* Set up poll structs for the controller and keyboards */
 	if (!noController) {
@@ -140,7 +141,6 @@ int INPUT_Init(void) {
 		}
 	}
 	kbdPaths = malloc(1 * KBD_PATH_MAX_CHAR);
-	fds = malloc(1 * sizeof(struct pollfd));
 	kbdFds = malloc(1 * sizeof(int));
 
 	INPUT_CheckNewKbds();
