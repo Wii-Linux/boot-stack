@@ -25,8 +25,8 @@ static bool noController = false;
 
 static int *kbdFds;
 static char (*kbdPaths)[KBD_PATH_MAX_CHAR];
-static int numKbdFds = 1;
-static int numKbdPaths = 1;
+static int numKbdFds = 0;
+static int numKbdPaths = 0;
 static struct pollfd *fds;
 
 #define TEST_KEY(k) (keybits[(k)/8] & (1 << ((k)%8)))
@@ -98,7 +98,9 @@ static void INPUT_CheckNewKbds(void) {
 
 				/* +2 is to account for not only the new entry, but also the entry for the controller */
 				fds = realloc(fds, (numKbdFds + 2) * sizeof(struct pollfd));
+				fprintf(logfile, "kbdFds[%d] = %d\n", numKbdFds, fd);
 				kbdFds[numKbdFds++] = fd;
+				fprintf(logfile, "fds[%d].fd = %d\n", numKbdFds, fd);
 				fds[numKbdFds].fd = fd;
 				fds[numKbdFds].events = POLLIN;
 			}
@@ -128,7 +130,11 @@ int INPUT_Init(void) {
 	fds = malloc(1 * sizeof(struct pollfd));
 
 	/* Set up poll structs for the controller and keyboards */
-	if (!noController) {
+	if (noController) {
+		fds[0].fd = -1;
+		fds[0].events = 0;
+	}
+	else {
 		fds[0].fd = controllerFd;
 		fds[0].events = POLLIN;
 
@@ -141,6 +147,7 @@ int INPUT_Init(void) {
 				break;
 		}
 	}
+
 	kbdPaths = malloc(1 * KBD_PATH_MAX_CHAR);
 	kbdFds = malloc(1 * sizeof(int));
 
@@ -166,7 +173,7 @@ static inputEvent_t INPUT_Check(void) {
 
 	while (keepGoing) {
 		keepGoing = 0; // break unless all we got was a release
-		ret = poll(fds, numKbdFds, 30);  /* wait for up to 30ms */
+		ret = poll(fds, numKbdFds + 1, 30);  /* wait for up to 30ms */
 
 		if (ret < 0) {
 			perror("poll");
@@ -203,7 +210,8 @@ static inputEvent_t INPUT_Check(void) {
 			keepGoing = 1;
 		}
 
-		for (i = 1; i < numKbdFds; i++) {
+		for (i = 1; i <= numKbdFds; i++) {
+			fprintf(logfile, "checking pollfd %d\n", i);
 			if (fds[i].revents & POLLIN) {
 				read(kbdFds[i - 1], &ev, sizeof(ev));
 
