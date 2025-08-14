@@ -86,7 +86,7 @@ int main() {
 			DEV_Detect(bdevs);
 
 			if (strcmp(bdevs[0], "dummy0") == 0) {
-				fprintf(stderr, "\e[1;31minternal error - DEV_Detect() failed\e[0m\r\n");
+				fputs("\e[1;31minternal error - DEV_Detect() failed\e[0m\r\n", stderr);
 				exit(1);
 			}
 

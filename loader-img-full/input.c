@@ -88,7 +88,7 @@ static void INPUT_CheckNewKbds(void) {
 
 			fprintf(logfile, "Checking if %s is a keyboard\n", fullpath);
 			if (isKeyboard(fullpath)) {
-				fprintf(logfile, "It is\n");
+				fputs("It is", logfile);
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
 				if (fd < 0) {
 					fprintf(logfile, "Opening %s failed (%d): %s (%d)\n", fullpath, fd, strerror(errno), errno);
@@ -108,7 +108,7 @@ static void INPUT_CheckNewKbds(void) {
 #endif
 			}
 			else {
-				fprintf(logfile, "It is NOT\n");
+				fputs("It is NOT", logfile);
 			}
 
 			kbdPaths = realloc(kbdPaths, (numKbdPaths + 1) * KBD_PATH_MAX_CHAR);
@@ -275,7 +275,7 @@ inputEvent_t INPUT_Handle(void) {
 	}
 	if (ret != INPUT_TYPE_NONE) {
 		TIMER_Stop();
-		fprintf(logfile, "Got real input!\n");
+		fputs("Got real input!", logfile);
 	}
 	return ret;
 }

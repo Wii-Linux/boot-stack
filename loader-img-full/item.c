@@ -15,7 +15,7 @@ void ITEM_RemoveByBdev(char *bdev) {
 		fputs("no\r\n", logfile);
 	}
 	if (idx == 0xDEAD) {
-		fprintf(logfile, "idx == 0xDEAD, nothing found.\r\n");
+		fputs("idx == 0xDEAD, nothing found.", logfile);
 		return;
 	}
 	fprintf(logfile, "nuking item at index %d\r\n", idx);

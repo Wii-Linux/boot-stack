@@ -25,6 +25,9 @@
 #define fprintf(file, format, ...) ((void)0)
 #define fopen(filename, mode) ((void *)0)
 #define fputs(str, file) ((void)0)
+#elif defined(DEBUG_WII)
+#define fprintf(file, format, ...) fprintf(file, format, __VA_ARGS__); fflush(file)
+#define fputs(str, file) fputs(str, file); fflush(file)
 #endif
 
 extern FILE *logfile;
