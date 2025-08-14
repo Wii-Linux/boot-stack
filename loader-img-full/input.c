@@ -103,6 +103,9 @@ static void INPUT_CheckNewKbds(void) {
 				fprintf(logfile, "fds[%d].fd = %d\n", numKbdFds, fd);
 				fds[numKbdFds].fd = fd;
 				fds[numKbdFds].events = POLLIN;
+#if defined(DEBUG_WII) || defined(PROD_BUILD)
+				ioctl(fd, EVIOCGRAB, 1); /* grab exclusive access to the device */
+#endif
 			}
 			else {
 				fprintf(logfile, "It is NOT\n");
