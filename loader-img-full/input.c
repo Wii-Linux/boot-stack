@@ -131,6 +131,7 @@ int INPUT_Init(void) {
 		noController = true;
 	}
 	fds = malloc(1 * sizeof(struct pollfd));
+	fprintf(logfile, "allocated fds @ %p\n", fds);
 
 	/* Set up poll structs for the controller and keyboards */
 	if (noController) {
@@ -151,9 +152,13 @@ int INPUT_Init(void) {
 		}
 	}
 
+	fputs("controller is set up", logfile);
 	kbdPaths = malloc(1 * KBD_PATH_MAX_CHAR);
+	fprintf(logfile, "kbdPaths allocated @ %p\n", kbdPaths);
 	kbdFds = malloc(1 * sizeof(int));
+	fprintf(logfile, "kbdFds allocated @ %p\n", kbdPaths);
 
+	fputs("checking for keyboards...", logfile);
 	INPUT_CheckNewKbds();
 	return 0;
 }
