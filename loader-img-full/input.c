@@ -73,6 +73,7 @@ static void INPUT_CheckNewKbds(void) {
 
 	while ((dp = readdir(dir)) != NULL) {
 		bool skip = false;
+		fputs("Entering loop...\n", logfile);
 		if (strncmp(dp->d_name, "event", 5) == 0) {
 			char fullpath[268]; /* d_name is 256 bytes */
 			int i;
