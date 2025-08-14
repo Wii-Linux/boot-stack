@@ -213,7 +213,7 @@ void DEV_Scan(char* block_device) {
 	pr = blkid_new_probe_from_filename(block_device);
 	if (!pr) {
 		addProblem("Couldn't create new blkid probe");
-		fputs("DEV_Scan(): skipping to out because !pr", logfile);
+		fputs("DEV_Scan(): skipping to out because !pr\n", logfile);
 		goto out;
 	}
 	blkid_probe_enable_partitions(pr, true);
@@ -222,7 +222,7 @@ void DEV_Scan(char* block_device) {
 
 	if (rc != 0) {
 		addProblem("Couldn't execute blkid fullprobe");
-		fputs("DEV_Scan(): skipping to out because rc!=0", logfile);
+		fputs("DEV_Scan(): skipping to out because rc!=0\n", logfile);
 		goto out;
 	}
 
@@ -333,15 +333,15 @@ void DEV_Compare(char bdevs[MAX_BDEV][MAX_BDEV_CHAR], char bdevsOld[MAX_BDEV][MA
 						char added[MAX_BDEV][MAX_BDEV_CHAR], char removed[MAX_BDEV][MAX_BDEV_CHAR]) {
 	int addedCount = 0, removedCount = 0;
 
-	fputs("DEV_Compare(): starting...", logfile);
+	fputs("DEV_Compare(): starting...\n", logfile);
 	for (int i = 0; i != MAX_BDEV; i++) {
 		fprintf(logfile, "bdevs[%d]=\"%s\" ", i, bdevs[i]);
 	}
-	fputs("", logfile);
+	fputs("\n", logfile);
 	for (int i = 0; i != MAX_BDEV; i++) {
 		fprintf(logfile, "bdevsOld[%d]=\"%s\" ", i, bdevsOld[i]);
 	}
-	fputs("", logfile);
+	fputs("\n", logfile);
 
 	memset(added, 0, MAX_BDEV * MAX_BDEV_CHAR);
 	memset(removed, 0, MAX_BDEV * MAX_BDEV_CHAR);
@@ -368,5 +368,5 @@ void DEV_Compare(char bdevs[MAX_BDEV][MAX_BDEV_CHAR], char bdevsOld[MAX_BDEV][MA
 			fputs("yes\r\n", logfile);
 		}
 	}
-	fputs("DEV_Compare(): leaving", logfile);
+	fputs("DEV_Compare(): leaving\n", logfile);
 }

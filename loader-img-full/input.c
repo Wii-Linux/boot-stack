@@ -88,7 +88,7 @@ static void INPUT_CheckNewKbds(void) {
 
 			fprintf(logfile, "Checking if %s is a keyboard\n", fullpath);
 			if (isKeyboard(fullpath)) {
-				fputs("It is", logfile);
+				fputs("It is\n", logfile);
 				int fd = open(fullpath, O_RDONLY | O_NONBLOCK);
 				if (fd < 0) {
 					fprintf(logfile, "Opening %s failed (%d): %s (%d)\n", fullpath, fd, strerror(errno), errno);
@@ -108,7 +108,7 @@ static void INPUT_CheckNewKbds(void) {
 #endif
 			}
 			else {
-				fputs("It is NOT", logfile);
+				fputs("It is NOT\n", logfile);
 			}
 
 			kbdPaths = realloc(kbdPaths, (numKbdPaths + 1) * KBD_PATH_MAX_CHAR);
@@ -152,13 +152,13 @@ int INPUT_Init(void) {
 		}
 	}
 
-	fputs("controller is set up", logfile);
+	fputs("controller is set up\n", logfile);
 	kbdPaths = malloc(1 * KBD_PATH_MAX_CHAR);
 	fprintf(logfile, "kbdPaths allocated @ %p\n", kbdPaths);
 	kbdFds = malloc(1 * sizeof(int));
-	fprintf(logfile, "kbdFds allocated @ %p\n", kbdPaths);
+	fprintf(logfile, "kbdFds allocated @ %p\n", kbdFds);
 
-	fputs("checking for keyboards...", logfile);
+	fputs("checking for keyboards...\n", logfile);
 	INPUT_CheckNewKbds();
 	return 0;
 }
@@ -280,7 +280,7 @@ inputEvent_t INPUT_Handle(void) {
 	}
 	if (ret != INPUT_TYPE_NONE) {
 		TIMER_Stop();
-		fputs("Got real input!", logfile);
+		fputs("Got real input!\n", logfile);
 	}
 	return ret;
 }
