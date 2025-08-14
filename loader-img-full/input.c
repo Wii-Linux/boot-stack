@@ -12,6 +12,7 @@
 #include <time.h>
 
 #include "include.h"
+#include "term.h"
 #include "menu.h"
 #include "items.h"
 #include "cleanup.h"
@@ -67,13 +68,28 @@ static int isKeyboard(const char *devPath) {
 static void INPUT_CheckNewKbds(void) {
 	struct dirent *dp;
 	DIR *dir;
+	int counter;
 
 	/* check for keyboards */
-	dir = opendir("/dev/input");
+	for (counter = 0; counter < 10; counter++) {
+		/* sometimes it could be a race condition, where the necessary
+		 * kernel driver hasn't yet registered.... keep trying with a
+		 * small timeout.
+		 */
 
+		dir = opendir("/dev/input");
+		if (dir)
+			break;
+	}
+
+	if (!dir) {
+		perror("opendir(\"/dev/input\") failed");
+		cleanupAndExit(1);
+	}
+
+	fputs("Entering loop...\n", logfile);
 	while ((dp = readdir(dir)) != NULL) {
 		bool skip = false;
-		fputs("Entering loop...\n", logfile);
 		if (strncmp(dp->d_name, "event", 5) == 0) {
 			char fullpath[268]; /* d_name is 256 bytes */
 			int i;
