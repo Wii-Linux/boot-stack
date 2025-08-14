@@ -3,6 +3,8 @@
 #include "items.h"
 #include "timer.h"
 
+#include <blkid/blkid.h>
+
 
 #define MAX_PROBLEMS 50000
 #define MAX_PROBLEM_CHAR 256

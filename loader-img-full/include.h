@@ -19,8 +19,6 @@
 #include <sys/wait.h>
 #include <sys/utsname.h>
 
-#include <blkid/blkid.h>
-
 
 #ifdef PROD_BUILD
 // disable logging, the Wii is too slow.
