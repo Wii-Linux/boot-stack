@@ -71,7 +71,7 @@ static void INPUT_CheckNewKbds(void) {
 	int counter;
 
 	/* check for keyboards */
-	for (counter = 0; counter < 10; counter++) {
+	for (counter = 0; counter <= MAX_OPENDIR_TRIES; counter++) {
 		/* sometimes it could be a race condition, where the necessary
 		 * kernel driver hasn't yet registered.... keep trying with a
 		 * small timeout.
@@ -80,10 +80,15 @@ static void INPUT_CheckNewKbds(void) {
 		dir = opendir("/dev/input");
 		if (dir)
 			break;
+		if (counter % 10 == 0)
+			printf("Still failing to opendir(\"/dev/input\")... attempt %d/%d\n", counter, MAX_OPENDIR_TRIES);
+
+		/* sleep 0.05s */
+		usleep(50000);
 	}
 
 	if (!dir) {
-		perror("opendir(\"/dev/input\") failed");
+		perror("opendir(\"/dev/input\") still failed after max tries");
 		exit(1);
 	}
 
