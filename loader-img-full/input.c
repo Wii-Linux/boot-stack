@@ -84,7 +84,7 @@ static void INPUT_CheckNewKbds(void) {
 
 	if (!dir) {
 		perror("opendir(\"/dev/input\") failed");
-		cleanupAndExit(1);
+		exit(1);
 	}
 
 	fputs("Entering loop...\n", logfile);
