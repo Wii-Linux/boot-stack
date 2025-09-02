@@ -267,7 +267,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         prob "/sbin/init does not exist"
         exitCode=105
     else
-        init="$(realpath $tmp/sbin/init)"
+        init="$tmp/$(realpath $tmp/sbin/init)"
     fi
 else
     init="$tmp/init"
