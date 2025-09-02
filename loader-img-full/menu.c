@@ -58,7 +58,7 @@ static void MENU_DrawLine(int i, bool forcePad) {
 }
 
 static void MENU_FullRedraw() {
-	char *title = "Wii Linux Boot Menu v0.5.3";
+	char *title = "Wii Linux Boot Menu v0.5.4";
 	int numSpc = (TERM_Width / 2) - (strlen(title) / 2);
 	printf("\e[1;1H\e[2J\r\n");
 	printf("\e[1;37m%*c%s\e[0m\r\n", numSpc, ' ', title);
