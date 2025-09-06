@@ -187,6 +187,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroColorLen="12 10"
             ;;
         artix)
+	    isArtix=true #for the init check system
             ppcDistro="\e[1;36mArtixPOWER"
             ppcDistroHighlighted="\e[36mArtixPOWER"
             otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
@@ -278,6 +279,31 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     exitCode=105
 fi
 
+# what the init are u supposed to be?
+if [ "$isArtix" = "true" ] && [ -n "$init" ] && [ -e "$init" ]; then
+    case "$(basename "$init")" in
+        openrc-init)
+            ppcDistro="\e[1;36mArtixPOWER (OpenRC)"
+            ppcDistroHighlighted="\e[36mArtixPOWER (OpenRC)"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (OpenRC)"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (OpenRC)"
+            ;;
+        runit-init)
+            ppcDistro="\e[1;36mArtixPOWER (Runit)"
+            ppcDistroHighlighted="\e[36mArtixPOWER (Runit)"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (Runit)"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (Runit)"
+            ;;
+        dinit|dinit-init)
+            ppcDistro="\e[1;36mArtixPOWER (Dinit)"
+            ppcDistroHighlighted="\e[36mArtixPOWER (Dinit)"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (Dinit)"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (Dinit)"
+            ;;
+    esac
+    ppcDistroColorLen="7 5"
+    otherDistroColorLen="12 10"
+fi
 
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
