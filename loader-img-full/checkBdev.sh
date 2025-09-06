@@ -60,6 +60,8 @@ exitCode=0
 distro=/._distro$2
 problems=/._problems$2
 colors=/._colors$2
+isArtix=false
+initlabel=""
 
 rm -f $distro $problems $colors
 tmp=$(mktemp -p / -d tmp_checkBdev_XXXXXXXXXX)
@@ -67,16 +69,6 @@ if ! mount "$1" "$tmp" -t "$3" -o ro; then
     prob "failed to mount"
     exit 101
 fi
-
-set_artix_labels() {
-    _suf="$1"
-    ppcDistro="\e[1;36mArtixPOWER${_suf}"
-    ppcDistroHighlighted="\e[36mArtixPOWER${_suf}"
-    otherDistro="\e[1;31mUnknown \e[36mArtix Linux${_suf}"
-    otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux${_suf}"
-    ppcDistroColorLen="7 5"
-    otherDistroColorLen="12 10"
-}
 
 # is it even a Linux (or Android) distro?
 if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/lib" ] || [ -L "$tmp/lib" ]; }; then
@@ -198,6 +190,12 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             ;;
         artix)
 	    	isArtix=true
+            ppcDistro="\e[1;36mArtixPOWER"
+            ppcDistroHighlighted="\e[36mArtixPOWER"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux"
+            ppcDistroColorLen="7 5"
+            otherDistroColorLen="12 10"
             ;;
         void)
             ppcDistro="\e[1;32mVoid PPC"
@@ -285,13 +283,15 @@ fi
 
 # what init is this copy of ArtixPOWER and set name on Menu accordingly
 if [ "$isArtix" = "true" ] && [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
-    initLabel=""
     case "$(basename "$init")" in
         openrc-init)        initLabel=" (OpenRC)";;
         runit-init)         initLabel=" (Runit)";;
         dinit|dinit-init)   initLabel=" (Dinit)";;
     esac
-    set_artix_labels "$initLabel"
+    ppcDistro="${ppcDistro}${initLabel}"
+    ppcDistroHighlighted="${ppcDistroHighlighted}${initLabel}"
+    otherDistro="${otherDistro}${initLabel}"
+    otherDistroHighlighted="${otherDistroHighlighted}${initLabel}"
 fi
 
 # are we sure we have a PPC distro?
