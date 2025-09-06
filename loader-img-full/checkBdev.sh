@@ -187,7 +187,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroColorLen="12 10"
             ;;
         artix)
-	    	isArtix=true #for the init check system
+	    	isArtix=true # Flag to later check what init ArtixPower is
             ppcDistro="\e[1;36mArtixPOWER"
             ppcDistroHighlighted="\e[36mArtixPOWER"
             otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
@@ -279,7 +279,7 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     exitCode=105
 fi
 
-# what the init are u supposed to be?
+# what init is this copy of ArtixPOWER
 if [ "$isArtix" = "true" ] && [ -n "$init" ] && [ -e "$init" ]; then
     case "$(basename "$init")" in
         openrc-init)
