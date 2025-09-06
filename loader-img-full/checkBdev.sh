@@ -68,6 +68,16 @@ if ! mount "$1" "$tmp" -t "$3" -o ro; then
     exit 101
 fi
 
+set_artix_labels() {
+    _suf="$1"
+    ppcDistro="\e[1;36mArtixPOWER${_suf}"
+    ppcDistroHighlighted="\e[36mArtixPOWER${_suf}"
+    otherDistro="\e[1;31mUnknown \e[36mArtix Linux${_suf}"
+    otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux${_suf}"
+    ppcDistroColorLen="7 5"
+    otherDistroColorLen="12 10"
+}
+
 # is it even a Linux (or Android) distro?
 if ! [ -d "$tmp/usr" ] || ! { [ -d "$tmp/lib" ] || [ -L "$tmp/lib" ]; }; then
     # not Normal Linux.... is it Android?
@@ -187,13 +197,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroColorLen="12 10"
             ;;
         artix)
-	    	isArtix=true # Flag to later check what init ArtixPower is
-            ppcDistro="\e[1;36mArtixPOWER"
-            ppcDistroHighlighted="\e[36mArtixPOWER"
-            otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
-            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux"
-            ppcDistroColorLen="7 5"
-            otherDistroColorLen="12 10"
+	    	isArtix=true
             ;;
         void)
             ppcDistro="\e[1;32mVoid PPC"
@@ -279,30 +283,15 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     exitCode=105
 fi
 
-# what init is this copy of ArtixPOWER
-if [ "$isArtix" = "true" ] && [ -n "$init" ] && [ -e "$init" ]; then
+# what init is this copy of ArtixPOWER and set name on Menu accordingly
+if [ "$isArtix" = "true" ] && [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
+    initLabel=""
     case "$(basename "$init")" in
-        openrc-init)
-            ppcDistro="\e[1;36mArtixPOWER (OpenRC)"
-            ppcDistroHighlighted="\e[36mArtixPOWER (OpenRC)"
-            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (OpenRC)"
-            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (OpenRC)"
-            ;;
-        runit-init)
-            ppcDistro="\e[1;36mArtixPOWER (Runit)"
-            ppcDistroHighlighted="\e[36mArtixPOWER (Runit)"
-            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (Runit)"
-            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (Runit)"
-            ;;
-        dinit|dinit-init)
-            ppcDistro="\e[1;36mArtixPOWER (Dinit)"
-            ppcDistroHighlighted="\e[36mArtixPOWER (Dinit)"
-            otherDistro="\e[1;31mUnknown \e[36mArtix Linux (Dinit)"
-            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux (Dinit)"
-            ;;
+        openrc-init)        initLabel=" (OpenRC)";;
+        runit-init)         initLabel=" (Runit)";;
+        dinit|dinit-init)   initLabel=" (Dinit)";;
     esac
-    ppcDistroColorLen="7 5"
-    otherDistroColorLen="12 10"
+    set_artix_labels "$initLabel"
 fi
 
 # are we sure we have a PPC distro?
