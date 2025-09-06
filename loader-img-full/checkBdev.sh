@@ -60,6 +60,8 @@ exitCode=0
 distro=/._distro$2
 problems=/._problems$2
 colors=/._colors$2
+isArtix=false
+initlabel=""
 
 rm -f $distro $problems $colors
 tmp=$(mktemp -p / -d tmp_checkBdev_XXXXXXXXXX)
@@ -187,6 +189,7 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroColorLen="12 10"
             ;;
         artix)
+	    	isArtix=true
             ppcDistro="\e[1;36mArtixPOWER"
             ppcDistroHighlighted="\e[36mArtixPOWER"
             otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
@@ -278,6 +281,18 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     exitCode=105
 fi
 
+# what init is this copy of ArtixPOWER and set name on Menu accordingly
+if [ "$isArtix" = "true" ] && [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
+    case "$(basename "$init")" in
+        openrc-init)        initLabel=" (OpenRC)";;
+        runit-init)         initLabel=" (Runit)";;
+        dinit|dinit-init)   initLabel=" (Dinit)";;
+    esac
+    ppcDistro="${ppcDistro}${initLabel}"
+    ppcDistroHighlighted="${ppcDistroHighlighted}${initLabel}"
+    otherDistro="${otherDistro}${initLabel}"
+    otherDistroHighlighted="${otherDistroHighlighted}${initLabel}"
+fi
 
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
