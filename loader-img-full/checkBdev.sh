@@ -286,19 +286,6 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     exitCode=105
 fi
 
-# what init is this copy of ArtixPOWER and set name on Menu accordingly
-if [ "$isArtix" = "true" ] && [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
-    case "$(basename "$init")" in
-        openrc-init)        initLabel=" (OpenRC)";;
-        runit-init)         initLabel=" (Runit)";;
-        dinit|dinit-init)   initLabel=" (Dinit)";;
-    esac
-    ppcDistro="${ppcDistro}${initLabel}"
-    ppcDistroHighlighted="${ppcDistroHighlighted}${initLabel}"
-    otherDistro="${otherDistro}${initLabel}"
-    otherDistroHighlighted="${otherDistroHighlighted}${initLabel}"
-fi
-
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     out=$(file -L "$init")
