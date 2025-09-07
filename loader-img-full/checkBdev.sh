@@ -187,10 +187,18 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
             otherDistroColorLen="12 10"
             ;;
         artix)
-            ppcDistro="\e[1;36mArtixPOWER"
-            ppcDistroHighlighted="\e[36mArtixPOWER"
-            otherDistro="\e[1;31mUnknown \e[36mArtix Linux"
-            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux"
+            initLabel=""
+            if   [ -x "$tmp/sbin/openrc-init" ] || [ -d "$tmp/etc/openrc" ] || [ -d "$tmp/etc/init.d" ]; then
+                initLabel=" (OpenRC)"
+            elif [ -x "$tmp/sbin/runit-init" ]  || [ -d "$tmp/etc/runit" ] || [ -d "$tmp/etc/sv" ]; then
+                initLabel=" (Runit)"
+            elif [ -x "$tmp/sbin/dinit" ] || [ -x "$tmp/bin/dinit" ] || [ -d "$tmp/etc/dinit.d" ]; then
+                initLabel=" (Dinit)"
+            fi
+            ppcDistro="\e[1;36mArtixPOWER${initLabel}"
+            ppcDistroHighlighted="\e[36mArtixPOWER${initLabel}"
+            otherDistro="\e[1;31mUnknown \e[36mArtix Linux${initLabel}"
+            otherDistroHighlighted="\e[31mUnknown \e[36mArtix Linux${initLabel}"
             ppcDistroColorLen="7 5"
             otherDistroColorLen="12 10"
             ;;
@@ -277,7 +285,6 @@ if ! [ -x "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
     prob "/sbin/init does exist but isn't executable"
     exitCode=105
 fi
-
 
 # are we sure we have a PPC distro?
 if [ -f "$init" ] && [ "$batoceraSquashfs" != "true" ]; then
