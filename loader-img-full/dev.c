@@ -9,6 +9,21 @@
 #define MAX_PROBLEMS 50000
 #define MAX_PROBLEM_CHAR 256
 
+static bool DEV_ignore(const char *name)
+{
+	static const char *PREFIX[] = { "loop", "zram", "ram", "nbd", "nfs", NULL };
+	int i;
+	for (i = 0; PREFIX[i]; i++) {
+		const char *prefix = PREFIX[i];
+		size_t len = strlen(prefix);
+		if (strlen(name) <= len) continue;
+		if (memcmp(name, prefix, len) != 0) continue;
+		if (!isdigit(name[len])) continue;
+		return true; // <prefix><digit>...
+	}
+	return false;
+}
+
 static char ___problems[MAX_PROBLEMS][MAX_PROBLEM_CHAR];
 static int  ___problemsIndex = 0;
 void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
@@ -27,11 +42,7 @@ void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
 
 	while ((ent = readdir(dir)) != NULL) {
 		char path[261];
-		if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "loop", 4) == 0) continue;
-		if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "zram", 4) == 0) continue;
-		if (strlen(ent->d_name) > 4 && memcmp(ent->d_name, "ram", 3) == 0) continue;
-		if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nbd", 3) == 0) continue;
-		if (strlen(ent->d_name) > 3 && memcmp(ent->d_name, "nfs", 3) == 0) continue;
+		if (DEV_ignore(ent->d_name)) continue; // ignored
 
 		snprintf(path, sizeof(path), "/dev/%s", ent->d_name);
 
@@ -46,6 +57,7 @@ void DEV_Detect(char bdevs[MAX_BDEV][MAX_BDEV_CHAR]) {
 			fprintf(logfile, "DEV_Detect(): adding %s", path);
 			strcpy(bdevs[i], path);
 			i++;
+			if (i == MAX_BDEV) break; // no overflow
 			bdevs[i][0] = '\0';
 		}
 	}

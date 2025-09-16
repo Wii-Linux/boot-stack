@@ -3,9 +3,9 @@
 
 void BOTTOM_Init() {
 	fputs("BOTTOM_Init() called\n", logfile);
-	printf("\e[%d;1HControls: Supports Keyboard or GCN Controller, format of \"Kbd Key [GCN button]\"", TERM_Height - 2);
-	printf("\e[%d;1HPress Up/Down (Keyboard/D-Pad) to select an item, Enter [A] to boot", TERM_Height - 1);
-	printf("\e[%d;1Hr [X]: Recovery Shell", TERM_Height);
+	printf("\e[%d;1HControls: supports Keyboard <KEY> or Gamecube Controller [BUTTON]", TERM_Height - 2);
+	printf("\e[%d;1HSelect: <UP/DOWN> [UP/DOWN], Boot: <ENTER> [A],", TERM_Height - 1);
+	printf("\e[%d;1HRecovery shell: <R> [X]", TERM_Height);
 	fflush(stdout);
 }
 void BOTTOM_Destroy() {
