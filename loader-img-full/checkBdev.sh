@@ -275,7 +275,10 @@ if [ "$android" != "true" ] && [ "$batoceraSquashfs" != "true" ]; then
         prob "/sbin/init does not exist"
         exitCode=105
     else
-        init="$tmp/$(realpath $tmp/sbin/init)"
+        init="$(realpath "$tmp/sbin/init")"
+	if ! echo "$init" | grep -qE "^$tmp/"; then
+		init="$tmp/$init"
+	fi
     fi
 else
     init="$tmp/init"
